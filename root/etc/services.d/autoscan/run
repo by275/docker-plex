@@ -1,0 +1,12 @@
+#!/usr/bin/with-contenv bash
+. /usr/local/bin/variables
+
+s6-svwait -u /var/run/s6/services/plex
+
+export PYTHONPATH=/opt/plex_autoscan
+
+exec s6-setuidgid abc \
+    /opt/plex_autoscan/venv/bin/python -m autoscan server \
+        --config "$PLEX_AUTOSCAN_CONFIG" \
+        --queuefile "$(dirname "$PLEX_AUTOSCAN_CONFIG")/queue.db" \
+        --cachefile "$(dirname "$PLEX_AUTOSCAN_CONFIG")/cache.db"

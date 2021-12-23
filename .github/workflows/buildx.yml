@@ -1,0 +1,96 @@
+name: buildx
+
+on:
+  watch:
+    types: [started]
+  schedule:
+    - cron: "43 21 * * *"
+  push:
+    branches:
+      - 'main'
+  pull_request:
+
+env:
+  IMAGE_NAME: by275/plex
+
+jobs:
+  build-lsio:
+    runs-on: ubuntu-20.04
+    if: github.event_name != 'pull_request' && (github.event_name != 'watch' || github.actor == github.event.repository.owner.login)
+    steps:
+      - 
+        name: Check if buildx required
+        run: |
+          docker pull ghcr.io/linuxserver/plex:latest
+          SHA256_REF=$(docker image inspect ghcr.io/linuxserver/plex:latest | jq -r '.[0].RootFS.Layers | last')
+          docker pull ghcr.io/${{ env.IMAGE_NAME }}:latest-lsio
+          X_REQ=$(docker image inspect ghcr.io/${{ env.IMAGE_NAME }}:latest-lsio | jq -c \
+            --arg sha "$SHA256_REF" '.[0].RootFS.Layers | any(. == $sha)')
+          echo "X_REQ=$X_REQ" >> $GITHUB_ENV
+        shell: bash
+      - 
+        name: Check failed
+        if: failure()
+        run: |
+          echo "X_REQ=true" >> $GITHUB_ENV
+      - 
+        name: Canceling rest of steps
+        if: ${{ env.X_REQ }} != 'true'
+        uses: andymckay/cancel-action@0.2
+      -
+        name: Checkout
+        uses: actions/checkout@v2
+      -
+        name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      -
+        name: Set up Buildx
+        uses: docker/setup-buildx-action@v1
+      - 
+        name: Initial Buildx
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: Dockerfile
+          tags: ${{ env.IMAGE_NAME }}:testing
+          platforms: linux/amd64,linux/arm/v7,linux/arm64
+      - 
+        name: Load Built Image and Get Variables
+        run: |
+          docker buildx build \
+            -t ghcr.io/${{ env.IMAGE_NAME }}:testing \
+            --platform=linux/amd64 \
+            --load \
+            .
+          CID=$(docker run -d ghcr.io/${{ env.IMAGE_NAME }}:testing)
+          VER=$(docker exec $CID dpkg-query --showformat='${Version}\n' --show plexmediaserver | cut -d- -f1)
+          docker rm -f $CID
+          echo "PMS_VER=$VER" >> $GITHUB_ENV
+      -
+        name: Login to ghcr.io
+        uses: docker/login-action@v1 
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GHCR_PAT }}
+      - 
+        name: Buildx and Push
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: Dockerfile
+          tags: |
+            ghcr.io/${{ env.IMAGE_NAME }}:latest-lsio
+            ghcr.io/${{ env.IMAGE_NAME }}:latest-lsio-${{ env.PMS_VER }}
+          platforms: linux/amd64,linux/arm/v7,linux/arm64
+          push: true
+      -
+        name: Notification
+        uses: sarisia/actions-status-discord@v1
+        if: always()
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          status: ${{ job.status }}
+          description: |
+            ghcr.io/${{ env.IMAGE_NAME }}:latest-lsio
+            ghcr.io/${{ env.IMAGE_NAME }}:latest-lsio-${{ env.PMS_VER }}

@@ -1,0 +1,6 @@
+#!/bin/bash
+
+exec s6-setuidgid abc \
+    cleanup_ptc.script $@ 2>&1
+# exec s6-setuidgid abc \
+#     cleanup_ptc.script $@ 2>&1 | tee -a /log/cleanup_ptc.log

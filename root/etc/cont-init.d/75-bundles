@@ -1,0 +1,39 @@
+#!/usr/bin/with-contenv bash
+. /usr/local/bin/variables
+
+if [[ ! -d "${PLUGIN_ROOT}" ]]; then
+    echo "*** no plugin folder found: ${PLUGIN_ROOT}"
+    exit 0
+fi
+
+
+echo "*** install/update SJVA.bundle"
+cd $(mktemp -d)
+git clone --quiet --depth 1 \
+    https://github.com/soju6jan/SJVA.bundle.git > /dev/null .
+
+rm -rf "${PLUGIN_ROOT}/SJVA.bundle"
+mv SJVA.bundle "${PLUGIN_ROOT}"/
+
+# 
+# install bundles
+# 
+MORE_BUNDLES="soju6jan/SjvaAgent.bundle $MORE_BUNDLES"  # space-separated github "{username}/{repo}"
+IFS=" " read -r -a MORE_BUNDLES <<< "$MORE_BUNDLES"
+for MORE_BUNDLE in "${MORE_BUNDLES[@]}"; do
+    install_bundle "${MORE_BUNDLE}"
+done
+
+# export libpms if dir exists
+[ -d /libpms ] && \
+    cp -r /usr/lib/plexmediaserver/* /libpms/
+
+
+# permission
+if getent passwd plex > /dev/null; then
+    chown -R plex:plex "${PLUGIN_ROOT}" "${SCANNER_ROOT}"
+else
+    chown -R abc:abc "${PLUGIN_ROOT}" "${SCANNER_ROOT}"
+fi
+
+exit 0

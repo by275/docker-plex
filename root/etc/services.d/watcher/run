@@ -1,0 +1,19 @@
+#!/usr/bin/with-contenv bash
+. /usr/local/bin/variables
+
+s6-svwait -u /var/run/s6/services/autoscan
+
+until curl -fs -X GET "${PLEX_AUTOSCAN_API}?cmd=queue_count" >/dev/null 2>&1; do
+    sleep 30
+done
+
+
+CURL_OPTS="-fsS -X POST -o /dev/null"
+IFS="|" read -r -a WATCHER_DIRS <<< "$WATCHER_DIRS"
+
+exec /usr/local/bin/watcher \
+    -dotfiles=${WATCHER_DOTFILES:-false} \
+    -interval=${WATCHER_INTERVAL:-60s} \
+    -pipe=true \
+    "-cmd=xargs -0 -I {} curl $CURL_OPTS -d eventType=Watcher -d pipe={} $PLEX_AUTOSCAN_URL" \
+    "${WATCHER_DIRS[@]}"

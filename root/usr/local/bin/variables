@@ -1,0 +1,50 @@
+#!/usr/bin/with-contenv bash
+
+PLUGIN_ROOT="/config/Library/Application Support/Plex Media Server/Plug-ins"
+SCANNER_ROOT="/config/Library/Application Support/Plex Media Server/Scanners"
+
+PLEX_AUTOSCAN_CONFIG="/config/autoscan/config.json"
+
+PTC_ROOT="/config/Library/Application Support/Plex Media Server/Cache/PhotoTranscoder"
+
+git_pull() {
+  if [ $# -lt 1 ]; then return 1; fi
+  if [ -z "${1}" ] || [ ! -d "${1}" ]; then return 1; fi
+  if [ "$(git -C "${1}" rev-parse --is-inside-work-tree 2>/dev/null)" = "true" ]; then
+    git_dir=$(git -C "${1}" rev-parse --absolute-git-dir 2>/dev/null)
+    find "${git_dir}" -name "index.lock" -exec rm -f {} \;
+    git_url=$(git -C "${1}" config --get remote.origin.url 2>/dev/null)
+    git_repo=$(echo "${git_url}" | cut -d/ -f4-)
+    echo "*** checking for updates: ${git_repo%%.git}"
+    git -C "${1}" reset --quiet --hard HEAD
+    RESP=$(git -C "${1}" pull 2>&1 |tee /dev/null; exit ${PIPESTATUS[0]}) && \
+      { if ! echo "$RESP" | grep -q "up to date"; then echo -e "$RESP" | ( TAB=$'    ' ; sed "s/^/$TAB/" ); fi } || \
+      { echo "    $RESP"; echo "    re-installing to '${1}'..." && \
+        rm -rf "${1}" && git -C "$(dirname "$1")" clone --quiet --depth 1 "${git_url}" > /dev/null
+      }
+  fi
+}
+
+install_bundle() {
+    git_repo=$(echo "${1}" | cut -d/ -f2)
+    bundle_root="${PLUGIN_ROOT}/${git_repo}"
+    git_pull "${bundle_root}" || \
+        {
+            echo "*** installing ${git_repo}"
+            rm -rf "${bundle_root}" && \
+                git -C "${PLUGIN_ROOT}" clone --quiet --depth 1 \
+                    https://github.com/$1 > /dev/null
+        }
+    if [[ "$1" == *SjvaAgent.bundle ]]; then
+        # install and update dummy agents
+        for BUN in "${bundle_root}"/*/*.bundle; do
+            [ -d "${PLUGIN_ROOT}/$(basename "$BUN")" ] && rm -rf "${PLUGIN_ROOT}/$(basename "$BUN")"
+            mv "$BUN" "${PLUGIN_ROOT}"
+        done
+
+        # install and update scanners
+        mvto="${SCANNER_ROOT}/Series"
+        [ ! -d "${mvto}" ] && mkdir -p "$mvto"
+        mv "${bundle_root}/Scanners/Series/"*  "${mvto}/"
+    fi
+}

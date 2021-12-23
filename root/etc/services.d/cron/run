@@ -1,0 +1,11 @@
+#!/usr/bin/with-contenv bash
+
+s6-svwait -u /var/run/s6/services/plex
+
+if [[ -n "${CLEANUP_PTC_CRON:-}" ]]; then
+    echo "*** scheduling job: cleanup phototranscoder"
+    go-cron "$CLEANUP_PTC_CRON" /usr/local/bin/cleanup_ptc &
+    sleep 2
+fi
+
+wait
