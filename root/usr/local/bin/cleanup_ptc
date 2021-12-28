@@ -1,6 +1,6 @@
 #!/bin/bash
 
-exec s6-setuidgid abc \
+USER=$(if getent passwd plex > /dev/null; then echo "plex"; else echo "abc"; fi)
+
+exec s6-setuidgid $USER \
     cleanup_ptc.script $@ 2>&1
-# exec s6-setuidgid abc \
-#     cleanup_ptc.script $@ 2>&1 | tee -a /log/cleanup_ptc.log

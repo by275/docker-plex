@@ -30,10 +30,7 @@ done
 
 
 # permission
-if getent passwd plex > /dev/null; then
-    chown -R plex:plex "${PLUGIN_ROOT}" "${SCANNER_ROOT}"
-else
-    chown -R abc:abc "${PLUGIN_ROOT}" "${SCANNER_ROOT}"
-fi
+USER=$(if getent passwd plex > /dev/null; then echo "plex"; else echo "abc"; fi)
+chown -R $USER:$USER "${PLUGIN_ROOT}" "${SCANNER_ROOT}"
 
 exit 0

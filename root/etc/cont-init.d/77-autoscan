@@ -24,3 +24,7 @@ else
 fi
 
 git_pull /opt/plex_autoscan
+
+# permission
+USER=$(if getent passwd plex > /dev/null; then echo "plex"; else echo "abc"; fi)
+chown -R $USER:$USER "$(dirname "$PLEX_AUTOSCAN_CONFIG")"

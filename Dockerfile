@@ -1,7 +1,11 @@
+ARG BASE_IMAGE
+
 FROM golang:1.16-bullseye AS builder
 
 ARG GO_CRON_VERSION=0.0.4
 ARG GO_CRON_SHA256=6c8ac52637150e9c7ee88f43e29e158e96470a3aaa3fcf47fd33771a8a76d959
+
+RUN mkdir -p /root/usr/local/bin
 
 RUN \
   echo "**** build go-cron v${GO_CRON_VERSION} ****" && \
@@ -10,17 +14,25 @@ RUN \
   tar xzf go-cron.tar.gz && \
   cd go-cron-${GO_CRON_VERSION} && \
   go build && \
-  mv go-cron /usr/local/bin/
+  mv go-cron /root/usr/local/bin/
 
 ARG WATCHER_VERSION=1.0.7
 
 RUN \
   echo "**** build watcher v${WATCHER_VERSION} ****" && \
   go install github.com/radovskyb/watcher/cmd/watcher@v${WATCHER_VERSION} && \
-  mv bin/watcher /usr/local/bin/
+  mv bin/watcher /root/usr/local/bin/
+
+# add local files
+COPY root/ /root/
+
+ADD https://raw.githubusercontent.com/by275/docker-scripts/master/root/etc/cont-init.d/20-install-pkg /root/etc/cont-init.d/72-install-pkg
+ADD https://raw.githubusercontent.com/by275/docker-scripts/master/root/etc/cont-init.d/30-wait-for-mnt /root/etc/cont-init.d/73-wait-for-mnt
+ADD https://raw.githubusercontent.com/by275/docker-scripts/master/root/etc/cont-init.d/90-custom-folders /root/etc/cont-init.d/90-custom-folders
+ADD https://raw.githubusercontent.com/by275/docker-scripts/master/root/etc/cont-init.d/99-custom-scripts /root/etc/cont-init.d/99-custom-scripts
 
 
-FROM ghcr.io/linuxserver/plex:latest
+FROM $BASE_IMAGE
 LABEL maintainer="by275"
 LABEL org.opencontainers.image.source https://github.com/by275/docker-plex
 
@@ -36,6 +48,7 @@ RUN \
   apt-get install -yq --no-install-recommends \
     gcc \
     git \
+    jq \
     python3-dev \
     python3-venv \
     sqlite3 && \
@@ -54,13 +67,7 @@ RUN \
   rm -rf /tmp/* /var/lib/{apt,dpkg,cache,log}/
 
 # add build artifacts
-COPY --from=builder /usr/local/bin/* /usr/local/bin/
-
-ADD https://raw.githubusercontent.com/by275/docker-scripts/master/root/etc/cont-init.d/20-install-pkg /etc/cont-init.d/72-install-pkg
-ADD https://raw.githubusercontent.com/by275/docker-scripts/master/root/etc/cont-init.d/30-wait-for-mnt /etc/cont-init.d/73-wait-for-mnt
-
-# add local files
-COPY root/ /
+COPY --from=builder /root/ /
 
 RUN chmod a+x \
   /usr/local/bin/*

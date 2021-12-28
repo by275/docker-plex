@@ -4,14 +4,16 @@ on:
   watch:
     types: [started]
   schedule:
-    - cron: "43 21 * * *"
+    - cron: "45 */6 * * *"
   push:
     branches:
-      - 'main'
+      - 'master'
   pull_request:
 
 env:
-  IMAGE_NAME: by275/plex
+  TARGET_IMAGE: ghcr.io/by275/plex
+  LSIO_IMAGE: ghcr.io/linuxserver/plex
+  PMS_IMAGE: plexinc/pms-docker
 
 jobs:
   build-lsio:
@@ -21,53 +23,54 @@ jobs:
       - 
         name: Check if buildx required
         run: |
-          docker pull ghcr.io/linuxserver/plex:latest
-          SHA256_REF=$(docker image inspect ghcr.io/linuxserver/plex:latest | jq -r '.[0].RootFS.Layers | last')
-          docker pull ghcr.io/${{ env.IMAGE_NAME }}:latest-lsio
-          X_REQ=$(docker image inspect ghcr.io/${{ env.IMAGE_NAME }}:latest-lsio | jq -c \
-            --arg sha "$SHA256_REF" '.[0].RootFS.Layers | any(. == $sha)')
-          echo "X_REQ=$X_REQ" >> $GITHUB_ENV
-        shell: bash
-      - 
-        name: Check failed
-        if: failure()
-        run: |
-          echo "X_REQ=true" >> $GITHUB_ENV
-      - 
-        name: Canceling rest of steps
-        if: ${{ env.X_REQ }} != 'true'
-        uses: andymckay/cancel-action@0.2
+          docker pull ${{ env.LSIO_IMAGE }}:latest
+          SHA256_REF=$(docker image inspect ${{ env.LSIO_IMAGE }}:latest | jq -r '.[0].RootFS.Layers | last')
+          docker pull ${{ env.TARGET_IMAGE }}:lsio && \
+            X_SKIP=$(docker image inspect ${{ env.TARGET_IMAGE }}:lsio | jq -c \
+              --arg sha "$SHA256_REF" '.[0].RootFS.Layers | any(. == $sha)') || \
+            X_SKIP=false
+          [[ $GITHUB_EVENT_NAME != "schedule" ]] && X_SKIP=false
+          echo "X_SKIP=$X_SKIP" >> $GITHUB_ENV
       -
         name: Checkout
+        if: env.X_SKIP == 'false'
         uses: actions/checkout@v2
       -
         name: Set up QEMU
+        if: env.X_SKIP == 'false'
         uses: docker/setup-qemu-action@v1
       -
         name: Set up Buildx
+        if: env.X_SKIP == 'false'
         uses: docker/setup-buildx-action@v1
       - 
         name: Initial Buildx
+        if: env.X_SKIP == 'false'
         uses: docker/build-push-action@v2
         with:
           context: .
           file: Dockerfile
-          tags: ${{ env.IMAGE_NAME }}:testing
+          tags: ${{ env.TARGET_IMAGE }}:testing
           platforms: linux/amd64,linux/arm/v7,linux/arm64
+          build-args: |
+            BASE_IMAGE=${{ env.LSIO_IMAGE }}:latest
       - 
-        name: Load Built Image and Get Variables
+        name: Load and Get Variables
+        if: env.X_SKIP == 'false'
         run: |
           docker buildx build \
-            -t ghcr.io/${{ env.IMAGE_NAME }}:testing \
+            -t ${{ env.TARGET_IMAGE }}:testing \
             --platform=linux/amd64 \
+            --build-arg BASE_IMAGE=${{ env.LSIO_IMAGE }}:latest \
             --load \
             .
-          CID=$(docker run -d ghcr.io/${{ env.IMAGE_NAME }}:testing)
-          VER=$(docker exec $CID dpkg-query --showformat='${Version}\n' --show plexmediaserver | cut -d- -f1)
+          CID=$(docker run -d ${{ env.TARGET_IMAGE }}:testing)
+          VER=$(docker exec $CID dpkg-query --showformat='${Version}\n' --show plexmediaserver)
           docker rm -f $CID
-          echo "PMS_VER=$VER" >> $GITHUB_ENV
+          echo "APP_VER=$VER" >> $GITHUB_ENV
       -
         name: Login to ghcr.io
+        if: env.X_SKIP == 'false'
         uses: docker/login-action@v1 
         with:
           registry: ghcr.io
@@ -75,22 +78,184 @@ jobs:
           password: ${{ secrets.GHCR_PAT }}
       - 
         name: Buildx and Push
+        if: env.X_SKIP == 'false'
         uses: docker/build-push-action@v2
         with:
           context: .
           file: Dockerfile
           tags: |
-            ghcr.io/${{ env.IMAGE_NAME }}:latest-lsio
-            ghcr.io/${{ env.IMAGE_NAME }}:latest-lsio-${{ env.PMS_VER }}
+            ${{ env.TARGET_IMAGE }}:lsio
+            ${{ env.TARGET_IMAGE }}:lsio-${{ env.APP_VER }}
           platforms: linux/amd64,linux/arm/v7,linux/arm64
+          build-args: |
+            BASE_IMAGE=${{ env.LSIO_IMAGE }}:latest
           push: true
       -
         name: Notification
         uses: sarisia/actions-status-discord@v1
-        if: always()
+        if: env.X_SKIP == 'false' && always()
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK }}
           status: ${{ job.status }}
           description: |
-            ghcr.io/${{ env.IMAGE_NAME }}:latest-lsio
-            ghcr.io/${{ env.IMAGE_NAME }}:latest-lsio-${{ env.PMS_VER }}
+            ${{ env.TARGET_IMAGE }}:lsio
+            ${{ env.TARGET_IMAGE }}:lsio-${{ env.APP_VER }}
+
+  build-pms-base:
+    runs-on: ubuntu-20.04
+    if: github.event_name != 'pull_request' && (github.event_name != 'watch' || github.actor == github.event.repository.owner.login)
+    steps:
+      - 
+        name: Check if buildx required
+        run: |
+          docker pull ${{ env.PMS_IMAGE }}:latest
+          SHA256_REF=$(docker image inspect ${{ env.PMS_IMAGE }}:latest | jq -r '.[0].RootFS.Layers | last')
+          docker pull ${{ env.TARGET_IMAGE }}:pms-base-amd64 && \
+            X_SKIP=$(docker image inspect ${{ env.TARGET_IMAGE }}:pms-base-amd64 | jq -c \
+              --arg sha "$SHA256_REF" '.[0].RootFS.Layers | any(. == $sha)') || \
+            X_SKIP=false
+          echo "X_SKIP=$X_SKIP" >> $GITHUB_ENV
+      -
+        name: Checkout
+        if: env.X_SKIP == 'false'
+        uses: actions/checkout@v2
+        with:
+          repository: plexinc/pms-docker
+      -
+        name: Set up QEMU
+        if: env.X_SKIP == 'false'
+        uses: docker/setup-qemu-action@v1
+      -
+        name: Set up Buildx
+        if: env.X_SKIP == 'false'
+        uses: docker/setup-buildx-action@v1
+      -
+        name: Login to ghcr.io
+        if: env.X_SKIP == 'false'
+        uses: docker/login-action@v1 
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GHCR_PAT }}
+      - 
+        name: Buildx and push (amd64)
+        if: env.X_SKIP == 'false'
+        run: |
+          docker pull ${{ env.PMS_IMAGE }}:latest
+          docker tag ${{ env.PMS_IMAGE }}:latest ${{ env.TARGET_IMAGE }}:pms-base-amd64
+          docker push ${{ env.TARGET_IMAGE }}:pms-base-amd64
+      - 
+        name: Buildx and push (arm64)
+        if: env.X_SKIP == 'false'
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: Dockerfile.arm64
+          tags: ${{ env.TARGET_IMAGE }}:pms-base-arm64
+          platforms: linux/arm64
+          push: true
+      - 
+        name: Buildx and push (armv7)
+        if: env.X_SKIP == 'false'
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: Dockerfile.armv7
+          tags: ${{ env.TARGET_IMAGE }}:pms-base-armv7
+          platforms: linux/arm/v7
+          push: true
+      - 
+        name: Manifest create and push for base
+        if: env.X_SKIP == 'false'
+        run: |
+          docker manifest create ${{ env.TARGET_IMAGE }}:pms-base-all \
+            ${{ env.TARGET_IMAGE }}:pms-base-amd64 \
+            ${{ env.TARGET_IMAGE }}:pms-base-arm64 \
+            ${{ env.TARGET_IMAGE }}:pms-base-armv7
+          docker manifest push ${{ env.TARGET_IMAGE }}:pms-base-all
+
+  build-pms:
+    needs: build-pms-base
+    runs-on: ubuntu-20.04
+    if: github.event_name != 'pull_request' && (github.event_name != 'watch' || github.actor == github.event.repository.owner.login)
+    steps:
+      - 
+        name: Check if buildx required
+        run: |
+          docker pull ${{ env.TARGET_IMAGE }}:pms-base-all
+          SHA256_REF=$(docker image inspect ${{ env.TARGET_IMAGE }}:pms-base-all | jq -r '.[0].RootFS.Layers | last')
+          docker pull ${{ env.TARGET_IMAGE }}:pms && \
+            X_SKIP=$(docker image inspect ${{ env.TARGET_IMAGE }}:pms | jq -c \
+              --arg sha "$SHA256_REF" '.[0].RootFS.Layers | any(. == $sha)') || \
+            X_SKIP=false
+          [[ $GITHUB_EVENT_NAME != "schedule" ]] && X_SKIP=false
+          echo "X_SKIP=$X_SKIP" >> $GITHUB_ENV
+      -
+        name: Checkout
+        if: env.X_SKIP == 'false'
+        uses: actions/checkout@v2
+      -
+        name: Set up QEMU
+        if: env.X_SKIP == 'false'
+        uses: docker/setup-qemu-action@v1
+      -
+        name: Set up Buildx
+        if: env.X_SKIP == 'false'
+        uses: docker/setup-buildx-action@v1
+      - 
+        name: Initial Buildx
+        if: env.X_SKIP == 'false'
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: Dockerfile
+          tags: ${{ env.TARGET_IMAGE }}:testing
+          platforms: linux/amd64,linux/arm/v7,linux/arm64
+          build-args: |
+            BASE_IMAGE=${{ env.TARGET_IMAGE }}:pms-base-all
+      - 
+        name: Load and Get Variables
+        if: env.X_SKIP == 'false'
+        run: |
+          docker buildx build \
+            -t ${{ env.TARGET_IMAGE }}:testing \
+            --platform=linux/amd64 \
+            --build-arg BASE_IMAGE=${{ env.TARGET_IMAGE }}:pms-base-all \
+            --load \
+            .
+          CID=$(docker run -d ${{ env.TARGET_IMAGE }}:testing)
+          VER=$(docker exec $CID dpkg-query --showformat='${Version}\n' --show plexmediaserver)
+          docker rm -f $CID
+          echo "APP_VER=$VER" >> $GITHUB_ENV
+      -
+        name: Login to ghcr.io
+        if: env.X_SKIP == 'false'
+        uses: docker/login-action@v1 
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GHCR_PAT }}
+      - 
+        name: Buildx and Push
+        if: env.X_SKIP == 'false'
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: Dockerfile
+          tags: |
+            ${{ env.TARGET_IMAGE }}:pms
+            ${{ env.TARGET_IMAGE }}:pms-${{ env.APP_VER }}
+          platforms: linux/amd64,linux/arm/v7,linux/arm64
+          build-args: |
+            BASE_IMAGE=${{ env.TARGET_IMAGE }}:pms-base-all
+          push: true
+      -
+        name: Notification
+        uses: sarisia/actions-status-discord@v1
+        if: env.X_SKIP == 'false' && always()
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          status: ${{ job.status }}
+          description: |
+            ${{ env.TARGET_IMAGE }}:pms
+            ${{ env.TARGET_IMAGE }}:pms-${{ env.APP_VER }}
