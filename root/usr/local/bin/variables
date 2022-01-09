@@ -2,6 +2,8 @@
 
 PLUGIN_ROOT="/config/Library/Application Support/Plex Media Server/Plug-ins"
 SCANNER_ROOT="/config/Library/Application Support/Plex Media Server/Scanners"
+PLEX_DB_ROOT="/config/Library/Application Support/Plex Media Server/Plug-in Support/Databases"
+PLEX_PREFERENCES="/config/Library/Application Support/Plex Media Server/Preferences.xml"
 
 PLEX_AUTOSCAN_CONFIG="/config/autoscan/config.json"
 
@@ -48,3 +50,6 @@ install_bundle() {
         mv "${bundle_root}/Scanners/Series/"*  "${mvto}/"
     fi
 }
+
+PLEX_USER=$(if getent passwd plex > /dev/null; then echo "plex"; else echo "abc"; fi)
+PLEX_TOKEN=$(sed -n 's/.*PlexOnlineToken="//p' "${PLEX_PREFERENCES}" | sed "s/\".*//")

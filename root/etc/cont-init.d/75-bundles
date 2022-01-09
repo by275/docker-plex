@@ -30,7 +30,7 @@ done
 
 
 # permission
-USER=$(if getent passwd plex > /dev/null; then echo "plex"; else echo "abc"; fi)
-chown -R $USER:$USER "${PLUGIN_ROOT}" "${SCANNER_ROOT}"
+find "${PLUGIN_ROOT}" "${SCANNER_ROOT}" \! \( -uid $(id -u $PLEX_USER) -gid $(id -g $PLEX_USER) \) -print0 | \
+    xargs -0 --no-run-if-empty chown -h $PLEX_USER:$PLEX_USER
 
 exit 0
