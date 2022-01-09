@@ -40,7 +40,7 @@ plex_up() {
 
 plex_down() {
     until [ $(curl -sX GET http://localhost:32400/status/sessions -H "X-Plex-Token: $PLEX_TOKEN" | grep MediaContainer | sed -n 's/.*size="//p' | sed "s/\".*//") -eq 0 ] ; do
-        sleep 10s
+        sleep 1m
     done
     echo "Shutting down Plex Media Server."
     s6-svc -wD -d /var/run/s6/services/plex
