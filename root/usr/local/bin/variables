@@ -52,4 +52,3 @@ install_bundle() {
 }
 
 PLEX_USER=$(if getent passwd plex > /dev/null; then echo "plex"; else echo "abc"; fi)
-PLEX_TOKEN=$(sed -n 's/.*PlexOnlineToken="//p' "${PLEX_PREFERENCES}" | sed "s/\".*//")

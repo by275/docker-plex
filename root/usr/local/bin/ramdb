@@ -14,6 +14,13 @@ if [ ! "$PLEX_RAMDB_ENABLED" = "true" ]; then
     exit 0
 fi
 
+if [ -f "${PLEX_PREFERENCES}" ]; then
+    PLEX_TOKEN=$(sed -n 's/.*PlexOnlineToken="//p' "${PLEX_PREFERENCES}" | sed "s/\".*//")
+fi
+
+if [ -z "${PLEX_TOKEN}" ]; then
+    exit 0
+fi
 
 ramdb_load() {
     if mountpoint -q "${PLEX_DB_ROOT}"; then
