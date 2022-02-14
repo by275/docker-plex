@@ -75,4 +75,5 @@ RUN \
 ENV S6_BEHAVIOUR_IF_STAGE2_FAILS=2 \
     DATE_FORMAT="+%4Y/%m/%d %H:%M:%S"
 
-HEALTHCHECK --interval=5s --timeout=2s --retries=20 CMD healthcheck.sh || exit 1
+HEALTHCHECK --interval=5s --timeout=2s --retries=20 \
+    CMD healthcheck || exit 1

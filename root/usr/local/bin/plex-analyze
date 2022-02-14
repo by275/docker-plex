@@ -1,0 +1,6 @@
+#!/bin/bash
+
+USER=$(if getent passwd plex > /dev/null; then echo "plex"; else echo "abc"; fi)
+
+exec s6-setuidgid $USER \
+    plex-analyze.script $@ 2>&1
