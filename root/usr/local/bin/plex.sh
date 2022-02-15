@@ -98,17 +98,14 @@ function repair() {
 # 
 # main
 # 
-if [ "$1" = "db" ]; then
-  if [ "$2" = "repair" ]; then
-    repair
-  else
-    echo "ERROR: not enough arguments passed"
-  fi
+if [ "$1" = "repair" ]; then
+  repair
 elif [ "$1" = "stats" ]; then
   stats
 elif [ "$1" = "analyze" ]; then
   analyze
 else
   echo "ERROR: Unknown command: $@"
+  echo "Usage: plex {analyze,repair,stats}"
   exit 1
 fi
