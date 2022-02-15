@@ -3,4 +3,4 @@
 USER=$(if getent passwd plex > /dev/null; then echo "plex"; else echo "abc"; fi)
 
 exec s6-setuidgid $USER \
-    cleanup-ptc.script $@ 2>&1
+    $(basename "$0").sh "$@" 2>&1

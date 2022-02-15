@@ -14,10 +14,6 @@ if [ ! "$PLEX_RAMDB_ENABLED" = "true" ]; then
     exit 0
 fi
 
-if [ -f "${PLEX_PREFERENCES}" ]; then
-    PLEX_TOKEN=$(sed -n 's/.*PlexOnlineToken="//p' "${PLEX_PREFERENCES}" | sed "s/\".*//")
-fi
-
 if [ -z "${PLEX_TOKEN}" ]; then
     exit 0
 fi
@@ -41,6 +37,7 @@ ramdb_unload() {
 
 
 plex_up() {
+    fix_ownership "$PLEX_DB_ROOT"
     s6-svc -wu -u /var/run/s6/services/plex
 }
 
@@ -65,5 +62,4 @@ elif [ "$1" = "reload" ]; then
     plex_up
 fi
 
-find "$PLEX_DB_ROOT" \! \( -uid $(id -u $PLEX_USER) -gid $(id -g $PLEX_USER) \) -print0 | \
-    xargs -0 --no-run-if-empty chown -h $PLEX_USER:$PLEX_USER
+fix_ownership "$PLEX_DB_ROOT"

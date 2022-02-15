@@ -5,9 +5,7 @@ s6-svwait -u /var/run/s6/services/plex
 
 export PYTHONPATH=/opt/plex_autoscan
 
-USER=$(if getent passwd plex > /dev/null; then echo "plex"; else echo "abc"; fi)
-
-exec s6-setuidgid $USER \
+exec s6-setuidgid $PLEX_USER \
     /opt/plex_autoscan/venv/bin/python -m autoscan server \
         --config "$PLEX_AUTOSCAN_CONFIG" \
         --queuefile "$(dirname "$PLEX_AUTOSCAN_CONFIG")/queue.db" \

@@ -1,0 +1,30 @@
+#!/usr/bin/with-contenv bash
+. /usr/local/bin/variables
+
+if [ $# -eq 0 ]; then
+    echo "ERROR: not enough arguments passed"
+    exit 1
+fi
+
+if [ ! -f "$PLEX_DB_FILE" ]; then
+    echo "ERROR: Unabled to locate plex db file. Exiting..."
+    exit 1
+fi
+
+if [ "$1" = "db" ] && [ "$2" = "repair" ]; then
+    if [ "$("$PLEX_SQLITE" "$PLEX_DB_FILE" "PRAGMA integrity_check")" = "ok" ]; then
+        read -r -p "No need to repair. Still want to proceed? [y/N] " resp </dev/tty
+        if [[ ! "$resp" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+            exit 0
+        fi
+    fi
+    echo "Shutting down Plex Media Server."
+    s6-svc -wD -d /var/run/s6/services/plex
+    s6-setuidgid $PLEX_USER \
+        $(basename "$0").sh "$@" 2>&1
+    echo "Starting Plex Media Server."
+    s6-svc -wu -u /var/run/s6/services/plex
+else
+    exec s6-setuidgid $PLEX_USER \
+        $(basename "$0").sh "$@" 2>&1
+fi

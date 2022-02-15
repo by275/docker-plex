@@ -8,12 +8,13 @@ fi
 
 
 echo "*** install/update SJVA.bundle"
-cd $(mktemp -d)
-git clone --quiet --depth 1 \
-    https://github.com/soju6jan/SJVA.bundle.git > /dev/null .
+tmpdir=$(mktemp -d)
+git -C "${tmpdir}" clone --quiet --depth 1 \
+    https://github.com/soju6jan/SJVA.bundle.git > /dev/null
 
 rm -rf "${PLUGIN_ROOT}/SJVA.bundle"
-mv SJVA.bundle "${PLUGIN_ROOT}"/
+mv "${tmpdir}/SJVA.bundle" "${PLUGIN_ROOT}"/
+rm -rf "${tmpdir}"
 
 # 
 # install bundles
@@ -30,7 +31,6 @@ done
 
 
 # permission
-find "${PLUGIN_ROOT}" "${SCANNER_ROOT}" \! \( -uid $(id -u $PLEX_USER) -gid $(id -g $PLEX_USER) \) -print0 | \
-    xargs -0 --no-run-if-empty chown -h $PLEX_USER:$PLEX_USER
+fix_ownership "${PLUGIN_ROOT}" "${SCANNER_ROOT}"
 
 exit 0

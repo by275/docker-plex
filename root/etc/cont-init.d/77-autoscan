@@ -26,5 +26,6 @@ fi
 git_pull /opt/plex_autoscan
 
 # permission
-find "$(dirname "$PLEX_AUTOSCAN_CONFIG")" \! \( -uid $(id -u $PLEX_USER) -gid $(id -g $PLEX_USER) \) -print0 | \
-    xargs -0 --no-run-if-empty chown -h $PLEX_USER:$PLEX_USER
+fix_ownership "$(dirname "$PLEX_AUTOSCAN_CONFIG")"
+
+exit 0

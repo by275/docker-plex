@@ -9,6 +9,16 @@ PLEX_AUTOSCAN_CONFIG="/config/autoscan/config.json"
 
 PTC_ROOT="/config/Library/Application Support/Plex Media Server/Cache/PhotoTranscoder"
 
+PLEX_SQLITE="/usr/lib/plexmediaserver/Plex SQLite"
+PLEX_SCANNER="/usr/lib/plexmediaserver/Plex Media Scanner"
+
+PLEX_USER=$(if getent passwd plex > /dev/null; then echo "plex"; else echo "abc"; fi)
+PLEX_DB_FILE="${PLEX_DB_ROOT}/com.plexapp.plugins.library.db"
+
+if [ -f "${PLEX_PREFERENCES}" ]; then
+    PLEX_TOKEN=$(sed -n 's/.*PlexOnlineToken="//p' "${PLEX_PREFERENCES}" | sed "s/\".*//")
+fi
+
 git_pull() {
   if [ $# -lt 1 ]; then return 1; fi
   if [ -z "${1}" ] || [ ! -d "${1}" ]; then return 1; fi
@@ -51,4 +61,7 @@ install_bundle() {
     fi
 }
 
-PLEX_USER=$(if getent passwd plex > /dev/null; then echo "plex"; else echo "abc"; fi)
+fix_ownership() {
+  find "$@" \! \( -uid $(id -u $PLEX_USER) -gid $(id -g $PLEX_USER) \) -print0 | \
+    xargs -0 --no-run-if-empty chown -h $PLEX_USER:$PLEX_USER
+}
