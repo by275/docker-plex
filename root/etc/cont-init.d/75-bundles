@@ -29,6 +29,21 @@ done
 [ -d /libpms ] && \
     cp -r /usr/lib/plexmediaserver/* /libpms/
 
+# patch local media bundle
+if [ "${PATCH_LOCAL_MEDIA_BUNDLE}" = "true" ]; then
+    file="$(ls -d /usr/lib/plexmediaserver/Resources/Plug-ins-*/LocalMedia.bundle/Contents/Code)/videohelpers.py"
+    if [[ -e "$file" ]]; then
+        [[ ! -e "$file.backup" ]] && cp "$file" "$file.backup"
+        pattern="^  def process_metadata\(.+\):$"
+        append="\ \ \ \ return"
+        if [[ "$(sed -rn "/$pattern/{n;p}" "$file")" != *"return" ]]; then
+            echo "*** patching LocalMedia.bundle"
+            sed -ri "/$pattern/a $append" "$file"
+        fi
+    else
+        echo "ERROR: File not found: '${file}'"
+    fi
+fi
 
 # permission
 fix_ownership "${PLUGIN_ROOT}" "${SCANNER_ROOT}"

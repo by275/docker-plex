@@ -72,8 +72,10 @@ RUN \
   rm -rf /tmp/* /var/lib/{apt,dpkg,cache,log}/
 
 # environment settings
-ENV S6_BEHAVIOUR_IF_STAGE2_FAILS=2 \
-    DATE_FORMAT="+%4Y/%m/%d %H:%M:%S"
+ENV \
+    S6_BEHAVIOUR_IF_STAGE2_FAILS=2 \
+    DATE_FORMAT="+%4Y/%m/%d %H:%M:%S" \
+    PATCH_LOCAL_MEDIA_BUNDLE=true
 
 HEALTHCHECK --interval=5s --timeout=2s --retries=20 \
     CMD healthcheck || exit 1
