@@ -25,10 +25,6 @@ for MORE_BUNDLE in "${MORE_BUNDLES[@]}"; do
     install_bundle "${MORE_BUNDLE}"
 done
 
-# export libpms if dir exists
-[ -d /libpms ] && \
-    cp -r /usr/lib/plexmediaserver/* /libpms/
-
 # patch local media bundle
 if [ "${PATCH_LOCAL_MEDIA_BUNDLE}" = "true" ]; then
     file="$(ls -d /usr/lib/plexmediaserver/Resources/Plug-ins-*/LocalMedia.bundle/Contents/Code)/videohelpers.py"
@@ -44,6 +40,10 @@ if [ "${PATCH_LOCAL_MEDIA_BUNDLE}" = "true" ]; then
         echo "ERROR: File not found: '${file}'"
     fi
 fi
+
+# export libpms if dir exists
+[ -d /libpms ] && \
+    cp -r /usr/lib/plexmediaserver/* /libpms/
 
 # permission
 fix_ownership "${PLUGIN_ROOT}" "${SCANNER_ROOT}"
