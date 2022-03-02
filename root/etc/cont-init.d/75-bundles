@@ -10,7 +10,7 @@ fi
 echo "*** install/update SJVA.bundle"
 tmpdir=$(mktemp -d)
 git -C "${tmpdir}" clone --quiet --depth 1 \
-    https://github.com/soju6jan/SJVA.bundle.git > /dev/null
+    https://github.com/soju6jan/SJVA.bundle.git > /dev/null .
 
 rm -rf "${PLUGIN_ROOT}/SJVA.bundle"
 mv "${tmpdir}/SJVA.bundle" "${PLUGIN_ROOT}"/
