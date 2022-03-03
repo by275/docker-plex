@@ -2,14 +2,7 @@
 . /usr/local/bin/variables
 
 if [ ! -f "$PLEX_AUTOSCAN_CONFIG" ]; then
-    # destroy relevant/dependent services
-    rm -rf /etc/services.d/autoscan
-    rm -rf /etc/services.d/watcher
     exit 0
-fi
-
-if [[ -z "${WATCHER_DIRS:-}" ]]; then
-    rm -rf /etc/services.d/watcher
 fi
 
 SERVER_PORT="$(jq -r '.SERVER_PORT' "$PLEX_AUTOSCAN_CONFIG")"
@@ -19,8 +12,6 @@ if [[ -n "${SERVER_PORT}" ]] && [[ -n "${SERVER_PASS}" ]]; then
     PLEX_AUTOSCAN_API="http://localhost:${SERVER_PORT}/api/${SERVER_PASS}"
     printf $PLEX_AUTOSCAN_URL > /var/run/s6/container_environment/PLEX_AUTOSCAN_URL
     printf $PLEX_AUTOSCAN_API > /var/run/s6/container_environment/PLEX_AUTOSCAN_API
-else
-    rm -rf /etc/services.d/watcher
 fi
 
 git_pull /opt/plex_autoscan

@@ -1,6 +1,21 @@
 #!/usr/bin/with-contenv bash
 . /usr/local/bin/variables
 
+if [ ! -f "$PLEX_AUTOSCAN_CONFIG" ]; then
+    s6-svc -d .
+    exit 0
+fi
+
+if [ ! -f "$PLEX_AUTOSCAN_URL" ] || [ -z "$PLEX_AUTOSCAN_API" ]; then
+    s6-svc -d .
+    exit 0
+fi
+
+if [ -z "${WATCHER_DIRS:-}" ]; then
+    s6-svc -d .
+    exit 0
+fi
+
 s6-svwait -u /var/run/s6/services/autoscan
 
 until curl -fs -X GET "${PLEX_AUTOSCAN_API}?cmd=queue_count" >/dev/null 2>&1; do

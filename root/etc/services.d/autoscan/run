@@ -1,6 +1,11 @@
 #!/usr/bin/with-contenv bash
 . /usr/local/bin/variables
 
+if [ ! -f "$PLEX_AUTOSCAN_CONFIG" ]; then
+    s6-svc -d .
+    exit 0
+fi
+
 s6-svwait -u /var/run/s6/services/plex
 
 export PYTHONPATH=/opt/plex_autoscan
