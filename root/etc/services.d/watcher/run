@@ -6,7 +6,7 @@ if [ ! -f "$PLEX_AUTOSCAN_CONFIG" ]; then
     exit 0
 fi
 
-if [ ! -f "$PLEX_AUTOSCAN_URL" ] || [ -z "$PLEX_AUTOSCAN_API" ]; then
+if [ -z "$PLEX_AUTOSCAN_URL" ] || [ -z "$PLEX_AUTOSCAN_API" ]; then
     s6-svc -d .
     exit 0
 fi
