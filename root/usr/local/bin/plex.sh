@@ -78,7 +78,7 @@ function repair() {
   # https://support.plex.tv/articles/repair-a-corrupted-database/
   dbfile="$(basename "$PLEX_DB_FILE")"
   dbback="$dbfile-$(date +%Y-%m-%d)"
-  
+
   cd "$(dirname "$PLEX_DB_FILE")" && \
   echo ">> Dumping to sql" && \
   "$PLEX_SQLITE" "$dbfile" ".output dump.sql" ".dump" && \

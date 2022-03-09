@@ -34,32 +34,32 @@ COPY --from=builder /bar/ /
 
 # install packages
 RUN \
-  echo "**** apt source change for local build ****" && \
-  sed -i "s/archive.ubuntu.com/$APT_MIRROR/g" /etc/apt/sources.list && \
-  echo "**** install runtime packages ****" && \
-  apt-get update && \
-  apt-get install -yq --no-install-recommends \
-    gcc \
-    git \
-    jq \
-    python3-dev \
-    python3-venv \
-    sqlite3 && \
-  echo "**** install plex_autoscan ****" && \
-  git -C /opt clone --depth 1 \
-    https://github.com/by275/plex_autoscan.git && \
-  python3 -m venv /opt/plex_autoscan/venv && \
-  /opt/plex_autoscan/venv/bin/python -m pip install wheel && \
-  /opt/plex_autoscan/venv/bin/python -m pip install -r /opt/plex_autoscan/requirements.txt && \
-  echo "**** permissions ****" && \
-  chmod a+x /usr/local/bin/* && \
-  echo "**** cleanup ****" && \
-  apt-get purge -y \
-    gcc \
-    python3-dev && \
-  apt-get clean autoclean && \
-  apt-get autoremove -y && \
-  rm -rf /tmp/* /var/lib/{apt,dpkg,cache,log}/
+    echo "**** apt source change for local build ****" && \
+    sed -i "s/archive.ubuntu.com/$APT_MIRROR/g" /etc/apt/sources.list && \
+    echo "**** install runtime packages ****" && \
+    apt-get update && \
+    apt-get install -yq --no-install-recommends \
+        gcc \
+        git \
+        jq \
+        python3-dev \
+        python3-venv \
+        sqlite3 && \
+    echo "**** install plex_autoscan ****" && \
+    git -C /opt clone --depth 1 \
+        https://github.com/by275/plex_autoscan.git && \
+    python3 -m venv /opt/plex_autoscan/venv && \
+    /opt/plex_autoscan/venv/bin/python -m pip install wheel && \
+    /opt/plex_autoscan/venv/bin/python -m pip install -r /opt/plex_autoscan/requirements.txt && \
+    echo "**** permissions ****" && \
+    chmod a+x /usr/local/bin/* && \
+    echo "**** cleanup ****" && \
+    apt-get purge -y \
+        gcc \
+        python3-dev && \
+    apt-get clean autoclean && \
+    apt-get autoremove -y && \
+    rm -rf /tmp/* /var/lib/{apt,dpkg,cache,log}/
 
 # environment settings
 ENV \
@@ -68,4 +68,4 @@ ENV \
     PATCH_LOCAL_MEDIA_BUNDLE=true
 
 HEALTHCHECK --interval=5s --timeout=2s --retries=20 \
-    CMD healthcheck || exit 1
+    CMD /usr/local/bin/healthcheck || exit 1
