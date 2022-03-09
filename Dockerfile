@@ -1,27 +1,15 @@
 ARG BASE_IMAGE
 
-FROM golang:1.16-bullseye AS builder
+FROM ${BASE_IMAGE} AS base
+FROM ghcr.io/by275/prebuilt:ubuntu20.04 AS prebuilt
 
-ARG GO_CRON_VERSION=0.0.4
-ARG GO_CRON_SHA256=6c8ac52637150e9c7ee88f43e29e158e96470a3aaa3fcf47fd33771a8a76d959
+# 
+# BUILD
+# 
+FROM base AS builder
 
-RUN mkdir -p /bar
-
-ENV GOBIN=/bar/usr/local/bin
-
-RUN \
-  echo "**** build go-cron v${GO_CRON_VERSION} ****" && \
-  curl -sL -o go-cron.tar.gz https://github.com/djmaze/go-cron/archive/v${GO_CRON_VERSION}.tar.gz && \
-  echo "${GO_CRON_SHA256}  go-cron.tar.gz" | sha256sum -c - && \
-  tar xzf go-cron.tar.gz && \
-  cd go-cron-${GO_CRON_VERSION} && \
-  go install
-
-ARG WATCHER_VERSION=1.0.7
-
-RUN \
-  echo "**** build watcher v${WATCHER_VERSION} ****" && \
-  go install github.com/radovskyb/watcher/cmd/watcher@v${WATCHER_VERSION}
+# add go-cron watcher
+COPY --from=prebuilt /go/bin/ /bar/usr/local/bin/
 
 # add local files
 COPY root/ /bar/
@@ -31,7 +19,9 @@ ADD https://raw.githubusercontent.com/by275/docker-scripts/master/root/etc/cont-
 ADD https://raw.githubusercontent.com/by275/docker-scripts/master/root/etc/cont-init.d/90-custom-folders /bar/etc/cont-init.d/90-custom-folders
 ADD https://raw.githubusercontent.com/by275/docker-scripts/master/root/etc/cont-init.d/99-custom-scripts /bar/etc/cont-init.d/99-custom-scripts
 
-
+# 
+# RELEASE
+# 
 FROM $BASE_IMAGE
 LABEL maintainer="by275"
 LABEL org.opencontainers.image.source https://github.com/by275/docker-plex
