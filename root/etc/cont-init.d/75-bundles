@@ -27,7 +27,8 @@ done
 
 # patch local media bundle
 if [ "${PATCH_LOCAL_MEDIA_BUNDLE}" = "true" ]; then
-    file="$(ls -d /usr/lib/plexmediaserver/Resources/Plug-ins-*/LocalMedia.bundle/Contents/Code)/videohelpers.py"
+    vertag=$(/usr/lib/plexmediaserver/Plex\ Media\ Server --version | cut -d- -f2)
+    file="/usr/lib/plexmediaserver/Resources/Plug-ins-$vertag/LocalMedia.bundle/Contents/Code/videohelpers.py"
     if [[ -e "$file" ]]; then
         [[ ! -e "$file.backup" ]] && cp "$file" "$file.backup"
         pattern="^  def process_metadata\(.+\):$"
