@@ -1,7 +1,7 @@
 ARG BASE_IMAGE
 
 FROM ${BASE_IMAGE} AS base
-FROM ghcr.io/by275/prebuilt:ubuntu20.04 AS prebuilt
+FROM ghcr.io/by275/base:ubuntu20.04 AS prebuilt
 
 # 
 # BUILD
@@ -14,10 +14,10 @@ COPY --from=prebuilt /go/bin/ /bar/usr/local/bin/
 # add local files
 COPY root/ /bar/
 
-ADD https://raw.githubusercontent.com/by275/docker-scripts/master/root/etc/cont-init.d/20-install-pkg /bar/etc/cont-init.d/72-install-pkg
-ADD https://raw.githubusercontent.com/by275/docker-scripts/master/root/etc/cont-init.d/30-wait-for-mnt /bar/etc/cont-init.d/73-wait-for-mnt
-ADD https://raw.githubusercontent.com/by275/docker-scripts/master/root/etc/cont-init.d/90-custom-folders /bar/etc/cont-init.d/90-custom-folders
-ADD https://raw.githubusercontent.com/by275/docker-scripts/master/root/etc/cont-init.d/99-custom-scripts /bar/etc/cont-init.d/99-custom-scripts
+ADD https://raw.githubusercontent.com/by275/docker-base/main/_/etc/cont-init.d/install-pkg /bar/etc/cont-init.d/72-install-pkg
+ADD https://raw.githubusercontent.com/by275/docker-base/main/_/etc/cont-init.d/wait-for-mnt /bar/etc/cont-init.d/73-wait-for-mnt
+ADD https://raw.githubusercontent.com/by275/docker-base/main/_/etc/cont-init.d/90-custom-folders /bar/etc/cont-init.d/90-custom-folders
+ADD https://raw.githubusercontent.com/by275/docker-base/main/_/etc/cont-init.d/99-custom-scripts /bar/etc/cont-init.d/99-custom-scripts
 
 # 
 # RELEASE
