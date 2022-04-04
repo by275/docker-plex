@@ -14,4 +14,4 @@ if [[ -n "${PLEX_RAMDB_CRON:-}" ]] && [[ "$PLEX_RAMDB_ENABLED" = "true" ]]; then
     sleep 2
 fi
 
-wait
+exec wait
