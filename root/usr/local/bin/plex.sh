@@ -99,6 +99,7 @@ function optimize() {
   if [ -n ${PLEX_TOKEN:-} ]; then
     curl -sX PUT http://localhost:32400/library/optimize?async=1 \
       -H "X-Plex-Token: $PLEX_TOKEN"
+  fi
 }
 
 # 
