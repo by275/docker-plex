@@ -95,6 +95,12 @@ function repair() {
     ${dbfile}-wal
 }
 
+function optimize() {
+  if [ -n ${PLEX_TOKEN:-} ]; then
+    curl -sX PUT http://localhost:32400/library/optimize?async=1 \
+      -H "X-Plex-Token: $PLEX_TOKEN"
+}
+
 # 
 # main
 # 
@@ -104,8 +110,10 @@ elif [ "$1" = "stats" ]; then
   stats
 elif [ "$1" = "analyze" ]; then
   analyze
+elif [ "$1" = "optimize" ]; then
+  optimize
 else
   echo "ERROR: Unknown command: $@"
-  echo "Usage: plex {analyze,repair,stats}"
+  echo "Usage: plex {analyze,repair,stats,optimize}"
   exit 1
 fi
