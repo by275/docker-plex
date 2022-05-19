@@ -30,5 +30,5 @@ exec /usr/local/bin/watcher \
     -dotfiles=${WATCHER_DOTFILES:-false} \
     -interval=${WATCHER_INTERVAL:-60s} \
     -pipe=true \
-    "-cmd=xargs -0 -I {} curl $CURL_OPTS -d eventType=Watcher -d pipe={} $PLEX_AUTOSCAN_URL" \
+    "-cmd=xargs -0 -I {} curl $CURL_OPTS -d eventType=Watcher --data-urlencode pipe={} $PLEX_AUTOSCAN_URL" \
     "${WATCHER_DIRS[@]}"

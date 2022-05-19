@@ -3,7 +3,7 @@
 
 if [ $# -eq 0 ]; then
     echo "ERROR: not enough arguments passed"
-    echo "Usage: $(basename "$0") {analyze,repair,stats}"
+    echo "Usage: $(basename "$0") {analyze,repair,stats,optimize}"
     exit 1
 fi
 
