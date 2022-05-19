@@ -20,13 +20,16 @@ jobs:
       - 
         name: Check if buildx required
         run: |
-          docker pull ${{ env.LSIO_IMAGE }}:latest
-          SHA256_REF=$(docker image inspect ${{ env.LSIO_IMAGE }}:latest | jq -r '.[0].RootFS.Layers | last')
-          docker pull ${{ env.TARGET_IMAGE }}:lsio && \
-            X_SKIP=$(docker image inspect ${{ env.TARGET_IMAGE }}:lsio | jq -c \
-              --arg sha "$SHA256_REF" '.[0].RootFS.Layers | any(. == $sha)') || \
+          if [ $GITHUB_EVENT_NAME = "schedule" ]; then
+            docker pull ${{ env.LSIO_IMAGE }}:latest
+            SHA256_REF=$(docker image inspect ${{ env.LSIO_IMAGE }}:latest | jq -r '.[0].RootFS.Layers | last')
+            docker pull ${{ env.TARGET_IMAGE }}:lsio && \
+              X_SKIP=$(docker image inspect ${{ env.TARGET_IMAGE }}:lsio | jq -c \
+                --arg sha "$SHA256_REF" '.[0].RootFS.Layers | any(. == $sha)') || \
+              X_SKIP=false
+          else
             X_SKIP=false
-          [[ $GITHUB_EVENT_NAME != "schedule" ]] && X_SKIP=false
+          fi
           echo "X_SKIP=$X_SKIP" >> $GITHUB_ENV
       -
         name: Checkout
@@ -104,12 +107,16 @@ jobs:
       - 
         name: Check if buildx required
         run: |
-          docker pull ${{ env.PMS_IMAGE }}:latest
-          SHA256_REF=$(docker image inspect ${{ env.PMS_IMAGE }}:latest | jq -r '.[0].RootFS.Layers | last')
-          docker pull ${{ env.TARGET_IMAGE }}:pms-base-amd64 && \
-            X_SKIP=$(docker image inspect ${{ env.TARGET_IMAGE }}:pms-base-amd64 | jq -c \
-              --arg sha "$SHA256_REF" '.[0].RootFS.Layers | any(. == $sha)') || \
+          if [ $GITHUB_EVENT_NAME = "schedule" ]; then
+            docker pull ${{ env.PMS_IMAGE }}:latest
+            SHA256_REF=$(docker image inspect ${{ env.PMS_IMAGE }}:latest | jq -r '.[0].RootFS.Layers | last')
+            docker pull ${{ env.TARGET_IMAGE }}:pms-base-amd64 && \
+              X_SKIP=$(docker image inspect ${{ env.TARGET_IMAGE }}:pms-base-amd64 | jq -c \
+                --arg sha "$SHA256_REF" '.[0].RootFS.Layers | any(. == $sha)') || \
+              X_SKIP=false
+          else
             X_SKIP=false
+          fi
           echo "X_SKIP=$X_SKIP" >> $GITHUB_ENV
       -
         name: Checkout
@@ -177,13 +184,16 @@ jobs:
       - 
         name: Check if buildx required
         run: |
-          docker pull ${{ env.TARGET_IMAGE }}:pms-base-all
-          SHA256_REF=$(docker image inspect ${{ env.TARGET_IMAGE }}:pms-base-all | jq -r '.[0].RootFS.Layers | last')
-          docker pull ${{ env.TARGET_IMAGE }}:pms && \
-            X_SKIP=$(docker image inspect ${{ env.TARGET_IMAGE }}:pms | jq -c \
-              --arg sha "$SHA256_REF" '.[0].RootFS.Layers | any(. == $sha)') || \
+          if [ $GITHUB_EVENT_NAME = "schedule" ]; then
+            docker pull ${{ env.TARGET_IMAGE }}:pms-base-all
+            SHA256_REF=$(docker image inspect ${{ env.TARGET_IMAGE }}:pms-base-all | jq -r '.[0].RootFS.Layers | last')
+            docker pull ${{ env.TARGET_IMAGE }}:pms && \
+              X_SKIP=$(docker image inspect ${{ env.TARGET_IMAGE }}:pms | jq -c \
+                --arg sha "$SHA256_REF" '.[0].RootFS.Layers | any(. == $sha)') || \
+              X_SKIP=false
+          else
             X_SKIP=false
-          [[ $GITHUB_EVENT_NAME != "schedule" ]] && X_SKIP=false
+          fi
           echo "X_SKIP=$X_SKIP" >> $GITHUB_ENV
       -
         name: Checkout
