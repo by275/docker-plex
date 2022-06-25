@@ -64,6 +64,7 @@ RUN \
     apt-get clean autoclean && \
     apt-get autoremove -y && \
     rm -rf \
+        /root/.cache \
         /tmp/* \
         /var/tmp/* \
         /var/cache/* \
