@@ -1,7 +1,7 @@
 ARG BASE_IMAGE
 
 FROM ${BASE_IMAGE} AS base
-FROM ghcr.io/by275/base:ubuntu20.04 AS prebuilt
+FROM ghcr.io/by275/base:ubuntu AS prebuilt
 
 # 
 # BUILD
@@ -19,6 +19,13 @@ ADD https://raw.githubusercontent.com/by275/docker-base/main/_/etc/cont-init.d/w
 ADD https://raw.githubusercontent.com/by275/docker-base/main/_/etc/cont-init.d/90-custom-folders /bar/etc/cont-init.d/90-custom-folders
 ADD https://raw.githubusercontent.com/by275/docker-base/main/_/etc/cont-init.d/99-custom-scripts /bar/etc/cont-init.d/99-custom-scripts
 
+RUN \
+    echo "**** permissions ****" && \
+    chmod a+x \
+        /bar/usr/local/bin/* \
+        /bar/etc/cont-init.d/* \
+        /bar/etc/services.d/*/run
+
 # 
 # RELEASE
 # 
@@ -28,9 +35,6 @@ LABEL org.opencontainers.image.source https://github.com/by275/docker-plex
 
 ARG DEBIAN_FRONTEND="noninteractive"
 ARG APT_MIRROR="archive.ubuntu.com"
-
-# add build artifacts
-COPY --from=builder /bar/ /
 
 # install packages
 RUN \
@@ -44,22 +48,29 @@ RUN \
         jq \
         python3-dev \
         python3-venv \
-        sqlite3 && \
+        sqlite3 \
+        && \
     echo "**** install plex_autoscan ****" && \
     git -C /opt clone --depth 1 \
         https://github.com/by275/plex_autoscan.git && \
     python3 -m venv /opt/plex_autoscan/venv && \
     /opt/plex_autoscan/venv/bin/python -m pip install wheel && \
     /opt/plex_autoscan/venv/bin/python -m pip install -r /opt/plex_autoscan/requirements.txt && \
-    echo "**** permissions ****" && \
-    chmod a+x /usr/local/bin/* && \
     echo "**** cleanup ****" && \
     apt-get purge -y \
         gcc \
-        python3-dev && \
+        python3-dev \
+        && \
     apt-get clean autoclean && \
     apt-get autoremove -y && \
-    rm -rf /tmp/* /var/lib/{apt,dpkg,cache,log}/
+    rm -rf \
+        /tmp/* \
+        /var/tmp/* \
+        /var/cache/* \
+        /var/lib/apt/lists/*
+
+# add build artifacts
+COPY --from=builder /bar/ /
 
 # environment settings
 ENV \
