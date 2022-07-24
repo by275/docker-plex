@@ -8,10 +8,4 @@ if [[ -n "${CLEANUP_PTC_CRON:-}" ]]; then
     sleep 2
 fi
 
-if [[ -n "${PLEX_RAMDB_CRON:-}" ]] && [[ "$PLEX_RAMDB_ENABLED" = "true" ]]; then
-    echo "*** scheduling job: reload ramdb"
-    go-cron "$PLEX_RAMDB_CRON" /usr/local/bin/ramdb reload &
-    sleep 2
-fi
-
 exec wait

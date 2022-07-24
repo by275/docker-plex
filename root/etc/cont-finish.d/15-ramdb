@@ -1,8 +1,0 @@
-#!/usr/bin/with-contenv bash
-
-if [ ! "$PLEX_RAMDB_ENABLED" = "true" ]; then
-    exit 0
-fi
-
-echo "*** safely unloading database from ram..."
-/usr/local/bin/ramdb unload
