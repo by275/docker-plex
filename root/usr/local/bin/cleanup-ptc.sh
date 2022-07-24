@@ -1,4 +1,4 @@
-#!/usr/bin/with-contenv bash
+#!/bin/bash
 . /usr/local/bin/variables
 
 # CLEANUP_PTC_AFTER_DAYS=100			# x일 지난 오래된 파일 삭제, 아래 용량 설정보다 우선함, 사용하지 않으려면 주석처리
