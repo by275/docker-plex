@@ -39,6 +39,11 @@ git_pull() {
   fi
 }
 
+is_git_dir() {
+    if [ "$(git -C "$1" rev-parse --is-inside-work-tree 2>/dev/null)" = "true" ]; then return 0; fi
+    return 1
+}
+
 install_bundle() {
     git_repo=$(echo "${1}" | cut -d/ -f2)
     bundle_root="${PLUGIN_ROOT}/${git_repo}"

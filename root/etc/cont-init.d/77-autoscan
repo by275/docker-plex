@@ -14,7 +14,59 @@ if [[ -n "${SERVER_PORT}" ]] && [[ -n "${SERVER_PASS}" ]]; then
     printf $PLEX_AUTOSCAN_API > /var/run/s6/container_environment/PLEX_AUTOSCAN_API
 fi
 
-git_pull /opt/plex_autoscan
+repo=$(echo "${PLEX_AUTOSCAN_GIT}" | cut -d/ -f4-)
+repo="${repo%%.git}"
+path="/opt/plex_autoscan"
+
+# get version to install
+if [[ "${PLEX_AUTOSCAN_VERSION}" == "latest" ]]; then
+    # latest release
+    PLEX_AUTOSCAN_VERSION="$(curl -sS  "https://api.github.com/repos/$repo/releases/latest" | jq -r '.tag_name')"
+elif [[ "${PLEX_AUTOSCAN_VERSION}" == "latest-tag" ]]; then
+    # latest tag
+    PLEX_AUTOSCAN_VERSION="$(curl -sS  "https://api.github.com/repos/$repo/tags" | jq -r '.[0].name')"
+elif [[ "${#PLEX_AUTOSCAN_VERSION}" -eq 40 ]]; then
+    # long hash to short
+    PLEX_AUTOSCAN_VERSION="${PLEX_AUTOSCAN_VERSION:0:7}"
+fi
+
+if ! [[ -n "${PLEX_AUTOSCAN_VERSION}" ]] || [[ -z "${PLEX_AUTOSCAN_VERSION}" ]] || \
+    [[ "${PLEX_AUTOSCAN_VERSION}" == "docker" ]] || [[ "${PLEX_AUTOSCAN_VERSION}" == "null" ]]; then
+    PLEX_AUTOSCAN_VERSION="${PLEX_AUTOSCAN_VERSION_DOCKER}"
+fi
+
+# check version installed
+GIT_TAG="$(git -C "$path" describe --tags --exact-match 2>/dev/null)"
+GIT_BRANCH="$(git -C "$path" rev-parse --abbrev-ref HEAD 2>/dev/null)"
+GIT_HASH="$(git -C "$path" rev-parse --short HEAD 2>/dev/null)"
+
+if [[ "$PLEX_AUTOSCAN_VERSION" == "$GIT_TAG" ]]; then
+    echo "*** using $repo@$GIT_TAG"
+elif [[ "$PLEX_AUTOSCAN_VERSION" == "$GIT_HASH" ]]; then
+    echo "*** using $repo@$GIT_HASH"
+elif [[ "$PLEX_AUTOSCAN_VERSION" == "$GIT_BRANCH" ]]; then
+    git_pull "$path"
+else
+    echo "*** installing $repo@$PLEX_AUTOSCAN_VERSION"
+    git -C /tmp clone --quiet -b "$PLEX_AUTOSCAN_VERSION" "$PLEX_AUTOSCAN_GIT" >/dev/null 2>&1 || \
+        {
+            git -C /tmp --quiet "$PLEX_AUTOSCAN_GIT" >/dev/null 2>&1 ;
+            git -C /tmp/plex_autoscan checkout "$PLEX_AUTOSCAN_VERSION" >/dev/null 2>&1 ;
+        }
+    if is_git_dir /tmp/plex_autoscan; then
+        rm -rf "$path" && mv /tmp/plex_autoscan "$(dirname "$path")"/
+    else
+        echo "    ERROR: failed to install $repo@$PLEX_AUTOSCAN_VERSION"
+        echo "*** fallback to $repo@$PLEX_AUTOSCAN_VERSION_DOCKER"
+        if ! is_git_dir "$path"; then
+            rm -rf "$path" && \
+                git -C "$(dirname "$path")" clone --depth 1 "$PLEX_AUTOSCAN_VERSION_DOCKER" >/dev/null 2>&1 && \
+                echo "    ERROR: fallback to $repo@$PLEX_AUTOSCAN_VERSION_DOCKER"
+        fi
+    fi
+    # cleanup
+    rm -rf /tmp/plex_autoscan
+fi
 
 # permission
 fix_ownership "$(dirname "$PLEX_AUTOSCAN_CONFIG")"

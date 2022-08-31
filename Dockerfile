@@ -36,6 +36,10 @@ LABEL org.opencontainers.image.source https://github.com/by275/docker-plex
 ARG DEBIAN_FRONTEND="noninteractive"
 ARG APT_MIRROR="archive.ubuntu.com"
 
+ENV PLEX_AUTOSCAN_GIT="https://github.com/by275/plex_autoscan.git" \
+    PLEX_AUTOSCAN_VERSION_DOCKER=v0.1.0 \
+    PLEX_AUTOSCAN_VERSION=docker
+
 # install packages
 RUN \
     echo "**** apt source change for local build ****" && \
@@ -51,8 +55,8 @@ RUN \
         sqlite3 \
         && \
     echo "**** install plex_autoscan ****" && \
-    git -C /opt clone --depth 1 \
-        https://github.com/by275/plex_autoscan.git && \
+    git -C /opt clone --depth 1 -b "$PLEX_AUTOSCAN_VERSION_DOCKER" \
+        "$PLEX_AUTOSCAN_GIT" && \
     python3 -m venv /usr/pas && \
     /usr/pas/bin/python -m pip install wheel && \
     /usr/pas/bin/python -m pip install -r /opt/plex_autoscan/requirements.txt && \
