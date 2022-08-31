@@ -53,9 +53,9 @@ RUN \
     echo "**** install plex_autoscan ****" && \
     git -C /opt clone --depth 1 \
         https://github.com/by275/plex_autoscan.git && \
-    python3 -m venv /opt/plex_autoscan/venv && \
-    /opt/plex_autoscan/venv/bin/python -m pip install wheel && \
-    /opt/plex_autoscan/venv/bin/python -m pip install -r /opt/plex_autoscan/requirements.txt && \
+    python3 -m venv /usr/pas && \
+    /usr/pas/bin/python -m pip install wheel && \
+    /usr/pas/bin/python -m pip install -r /opt/plex_autoscan/requirements.txt && \
     echo "**** cleanup ****" && \
     apt-get purge -y \
         gcc \
