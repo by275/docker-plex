@@ -66,6 +66,9 @@ else
     fi
     # cleanup
     rm -rf /tmp/plex_autoscan
+    # install deps
+    [ -f "${path}/requirements.txt" ] && \
+        /usr/pas/bin/python -m pip -q install -r "${path}/requirements.txt" -U
 fi
 
 # permission
