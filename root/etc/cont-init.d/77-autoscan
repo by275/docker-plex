@@ -50,7 +50,7 @@ else
     echo "*** installing $repo@$PLEX_AUTOSCAN_VERSION"
     git -C /tmp clone --quiet -b "$PLEX_AUTOSCAN_VERSION" "$PLEX_AUTOSCAN_GIT" >/dev/null 2>&1 || \
         {
-            git -C /tmp --quiet "$PLEX_AUTOSCAN_GIT" >/dev/null 2>&1 ;
+            git -C /tmp clone --quiet "$PLEX_AUTOSCAN_GIT" >/dev/null 2>&1 ;
             git -C /tmp/plex_autoscan checkout "$PLEX_AUTOSCAN_VERSION" >/dev/null 2>&1 ;
         }
     if is_git_dir /tmp/plex_autoscan; then
