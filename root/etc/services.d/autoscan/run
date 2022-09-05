@@ -6,7 +6,8 @@ if [ ! -f "$PLEX_AUTOSCAN_CONFIG" ]; then
     exit 0
 fi
 
-s6-svwait -u /var/run/s6/services/plex
+until curl -fsS "http://localhost:32400/identity" >/dev/null 2>&1; do sleep 3s; done
+sleep 3s
 
 export PYTHONPATH=/opt/plex_autoscan
 
