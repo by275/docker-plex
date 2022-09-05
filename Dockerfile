@@ -37,7 +37,7 @@ ARG DEBIAN_FRONTEND="noninteractive"
 ARG APT_MIRROR="archive.ubuntu.com"
 
 ENV PLEX_AUTOSCAN_GIT="https://github.com/by275/plex_autoscan.git" \
-    PLEX_AUTOSCAN_VERSION_DOCKER=master \
+    PLEX_AUTOSCAN_VERSION_DOCKER=v0.1.0 \
     PLEX_AUTOSCAN_VERSION=docker
 
 # install packages
