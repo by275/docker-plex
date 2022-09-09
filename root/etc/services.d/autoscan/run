@@ -1,5 +1,4 @@
 #!/usr/bin/with-contenv bash
-. /usr/local/bin/variables
 
 if [ ! -f "$PLEX_AUTOSCAN_CONFIG" ]; then
     s6-svc -d .
@@ -9,10 +8,4 @@ fi
 until curl -fsS "http://localhost:32400/identity" >/dev/null 2>&1; do sleep 3s; done
 sleep 3s
 
-export PYTHONPATH=/opt/plex_autoscan
-
-exec s6-setuidgid $PLEX_USER \
-    /usr/pas/bin/python -m autoscan server \
-        --config "$PLEX_AUTOSCAN_CONFIG" \
-        --queuefile "$(dirname "$PLEX_AUTOSCAN_CONFIG")/queue.db" \
-        --cachefile "$(dirname "$PLEX_AUTOSCAN_CONFIG")/cache.db"
+exec /usr/local/bin/autoscan server

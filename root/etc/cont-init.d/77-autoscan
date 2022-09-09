@@ -20,9 +20,6 @@ path="/opt/plex_autoscan"
 
 # get version to install
 if [[ "${PLEX_AUTOSCAN_VERSION}" == "latest" ]]; then
-    # latest release
-    PLEX_AUTOSCAN_VERSION="$(curl -sS  "https://api.github.com/repos/$repo/releases/latest" | jq -r '.tag_name')"
-elif [[ "${PLEX_AUTOSCAN_VERSION}" == "latest-tag" ]]; then
     # latest tag
     PLEX_AUTOSCAN_VERSION="$(curl -sS  "https://api.github.com/repos/$repo/tags" | jq -r '.[0].name')"
 elif [[ "${#PLEX_AUTOSCAN_VERSION}" -eq 40 ]]; then

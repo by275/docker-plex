@@ -5,8 +5,6 @@ SCANNER_ROOT="/config/Library/Application Support/Plex Media Server/Scanners"
 PLEX_DB_ROOT="/config/Library/Application Support/Plex Media Server/Plug-in Support/Databases"
 PLEX_PREFERENCES="/config/Library/Application Support/Plex Media Server/Preferences.xml"
 
-PLEX_AUTOSCAN_CONFIG="/config/autoscan/config.json"
-
 PTC_ROOT="/config/Library/Application Support/Plex Media Server/Cache/PhotoTranscoder"
 
 PLEX_SQLITE="/usr/lib/plexmediaserver/Plex SQLite"

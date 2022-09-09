@@ -1,0 +1,8 @@
+#!/bin/bash
+
+USER=$(if getent passwd plex > /dev/null; then echo "plex"; else echo "abc"; fi)
+
+export PYTHONPATH=/opt/plex_autoscan
+
+exec s6-setuidgid $USER \
+    /usr/pas/bin/python -m autoscan "$@"

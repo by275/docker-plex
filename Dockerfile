@@ -36,7 +36,11 @@ LABEL org.opencontainers.image.source https://github.com/by275/docker-plex
 ARG DEBIAN_FRONTEND="noninteractive"
 ARG APT_MIRROR="archive.ubuntu.com"
 
-ENV PLEX_AUTOSCAN_GIT="https://github.com/by275/plex_autoscan.git" \
+ENV \    
+    PLEX_AUTOSCAN_CONFIG="/config/autoscan/config.json" \
+    PLEX_AUTOSCAN_QUEUEFILE="/config/autoscan/queue.db" \
+    PLEX_AUTOSCAN_CACHEFILE="/config/autoscan/cache.db" \
+    PLEX_AUTOSCAN_GIT="https://github.com/by275/plex_autoscan.git" \
     PLEX_AUTOSCAN_VERSION_DOCKER=v0.1.0 \
     PLEX_AUTOSCAN_VERSION=docker
 
