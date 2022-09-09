@@ -62,9 +62,13 @@ install_bundle() {
         done
 
         # install and update scanners
-        mvto="${SCANNER_ROOT}/Series"
-        [ ! -d "${mvto}" ] && mkdir -p "$mvto"
-        mv "${bundle_root}/Scanners/Series/"*  "${mvto}/"
+        for SCN in "${bundle_root}"/Scanners/*; do
+          if [ -d "$SCN" ]; then
+            mvto="${SCANNER_ROOT}/$(basename "$SCN")"
+            [ ! -d "${mvto}" ] && mkdir -p "$mvto"
+            mv "$SCN"/* "${mvto}/"
+          fi
+        done
     fi
 }
 
