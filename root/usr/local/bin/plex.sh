@@ -42,7 +42,7 @@ function stats() {
 
   query="SELECT count(*) FROM media_items"
   result=$("$PLEX_SQLITE" -readonly -header -line "$PLEX_DB_FILE" "$query")
-  echo "${result:11} files in library"
+  echo "${result:11} media_items in library"
 
   echo ""
 
