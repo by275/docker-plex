@@ -102,6 +102,36 @@ function optimize() {
   fi
 }
 
+function claim() {
+  local PLEX_CLAIM="$1"
+  [ -z "${PLEX_CLAIM}" ] && echo "Not enough arguments for this command" && return
+  [ ! -f "${PLEX_PREFERENCES}" ] && echo "No Plex Preferences File: ${PLEX_PREFERENCES}" && return
+  if ! grep -qs "PlexOnlineToken" "${PLEX_PREFERENCES}"; then
+    # no placeholder; seems not initialized
+    return
+  fi
+
+  ProcessedMachineIdentifier=$(sed -n "s/^.*ProcessedMachineIdentifier=\"\([^\"]*\)\".*$/\1/p" "${PLEX_PREFERENCES}")
+  PlexOnlineToken="$(curl -X POST \
+    -H 'X-Plex-Client-Identifier: '"${ProcessedMachineIdentifier}" \
+    -H 'X-Plex-Product: Plex Media Server'\
+    -H 'X-Plex-Version: 1.1' \
+    -H 'X-Plex-Provides: server' \
+    -H 'X-Plex-Platform: Linux' \
+    -H 'X-Plex-Platform-Version: 1.0' \
+    -H 'X-Plex-Device-Name: PlexMediaServer' \
+    -H 'X-Plex-Device: Linux' \
+    "https://plex.tv/api/claim/exchange?token=${PLEX_CLAIM}" \
+    | sed -n 's/.*<authentication-token>\(.*\)<\/authentication-token>.*/\1/p')"
+
+  if [ -n "$PlexOnlineToken" ]; then
+    echo "Server claimed successfully."
+    sed -i "s/\/>/ PlexOnlineToken=\"${PlexOnlineToken}\"\/>/g" "${PLEX_PREFERENCES}"
+  else
+    echo "Unable to claim Plex server."
+  fi
+}
+
 # 
 # main
 # 
@@ -113,8 +143,10 @@ elif [ "$1" = "analyze" ]; then
   analyze
 elif [ "$1" = "optimize" ]; then
   optimize
+elif [ "$1" = "claim" ]; then
+  claim
 else
   echo "ERROR: Unknown command: $@"
-  echo "Usage: plex {analyze,repair,stats,optimize}"
+  echo "Usage: plex {analyze,repair,stats,optimize,claim}"
   exit 1
 fi
