@@ -1,6 +1,12 @@
 #!/usr/bin/with-contenv bash
 
-s6-svwait -u /var/run/s6/services/plex
+if [[ -d "/var/run/s6-rc/servicedirs/svc-plex" ]]; then
+    # lsio/plex
+    s6-svwait -U /var/run/s6-rc/servicedirs/svc-plex
+else
+    # plexinc/pms-docker
+    s6-svwait -u /var/run/s6/services/plex
+fi
 
 if [[ -n "${CLEANUP_PTC_CRON:-}" ]]; then
     echo "*** scheduling job: cleanup phototranscoder"
