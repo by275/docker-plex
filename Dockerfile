@@ -14,17 +14,19 @@ COPY --from=prebuilt /go/bin/ /bar/usr/local/bin/
 # add local files
 COPY root/ /bar/
 
-ADD https://raw.githubusercontent.com/by275/docker-base/main/_/etc/cont-init.d/install-pkg /bar/etc/cont-init.d/72-install-pkg
-ADD https://raw.githubusercontent.com/by275/docker-base/main/_/etc/cont-init.d/wait-for-mnt /bar/etc/cont-init.d/73-wait-for-mnt
-ADD https://raw.githubusercontent.com/by275/docker-base/main/_/etc/cont-init.d/90-custom-folders /bar/etc/cont-init.d/90-custom-folders
-ADD https://raw.githubusercontent.com/by275/docker-base/main/_/etc/cont-init.d/99-custom-scripts /bar/etc/cont-init.d/99-custom-scripts
+ADD https://raw.githubusercontent.com/by275/docker-base/main/_/etc/cont-init.d/install-pkg /bar/etc/s6-overlay/s6-rc.d/init-install-pkg/run
+ADD https://raw.githubusercontent.com/by275/docker-base/main/_/etc/cont-init.d/wait-for-mnt /bar/etc/s6-overlay/s6-rc.d/init-wait-for-mnt/run
 
 RUN \
     echo "**** permissions ****" && \
     chmod a+x \
         /bar/usr/local/bin/* \
-        /bar/etc/cont-init.d/* \
-        /bar/etc/services.d/*/run
+        /bar/etc/s6-overlay/s6-rc.d/*/run \
+    && \
+    echo "**** s6: add services to user/contents.d ****" && \
+    mkdir -p /tmp/app/contents.d && \
+    for dir in /bar/etc/s6-overlay/s6-rc.d/*; do touch "/tmp/app/contents.d/$(basename "$dir")"; done && \
+    mv /tmp/app /bar/etc/s6-overlay/s6-rc.d/user
 
 # 
 # RELEASE
@@ -64,6 +66,9 @@ RUN \
     python3 -m venv /usr/pas && \
     /usr/pas/bin/python -m pip install wheel && \
     /usr/pas/bin/python -m pip install -r /opt/plex_autoscan/requirements.txt && \
+    echo "**** modify existing s6-rc.d ****" && \
+    mv /etc/s6-overlay/s6-rc.d/init-config-end/dependencies.d/init-plex-update \
+        /etc/s6-overlay/s6-rc.d/init-config-end/dependencies.d/init-autoscan && \
     echo "**** cleanup ****" && \
     apt-get purge -y \
         gcc \
