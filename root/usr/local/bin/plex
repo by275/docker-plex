@@ -20,23 +20,11 @@ if [ "$1" = "repair" ]; then
         fi
     fi
     echo "Shutting down Plex Media Server."
-    if [ -d "/var/run/s6-rc/servicedirs/svc-plex" ]; then
-        # lsio/plex
-        s6-svc -wD -d /var/run/s6-rc/servicedirs/svc-plex
-    else
-        # plexinc/pms-docker
-        s6-svc -wD -d /var/run/s6/services/plex
-    fi
+    s6-svc -wD -d /var/run/s6-rc/servicedirs/svc-plex
     s6-setuidgid $PLEX_USER \
         $(basename "$0").sh "$@" 2>&1
     echo "Starting Plex Media Server."
-    if [ -d "/var/run/s6-rc/servicedirs/svc-plex" ]; then
-        # lsio/plex
-        s6-svc -wU -u /var/run/s6-rc/servicedirs/svc-plex
-    else
-        # plexinc/pms-docker
-        s6-svc -wu -u /var/run/s6/services/plex
-    fi
+    s6-svc -wU -u /var/run/s6-rc/servicedirs/svc-plex
 else
     exec s6-setuidgid $PLEX_USER \
         $(basename "$0").sh "$@" 2>&1

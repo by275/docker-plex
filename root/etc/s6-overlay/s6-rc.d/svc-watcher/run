@@ -16,7 +16,7 @@ if [ -z "${WATCHER_DIRS:-}" ]; then
     exit 0
 fi
 
-s6-svwait -u /var/run/s6/services/autoscan
+s6-svwait -u /var/run/s6-rc/servicedirs/svc-autoscan
 
 until curl -fs -X GET "${PLEX_AUTOSCAN_API}?cmd=queue_count" >/dev/null 2>&1; do
     sleep 30
