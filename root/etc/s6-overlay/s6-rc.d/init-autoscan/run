@@ -33,7 +33,7 @@ if ! [[ -n "${PLEX_AUTOSCAN_VERSION}" ]] || [[ -z "${PLEX_AUTOSCAN_VERSION}" ]] 
 fi
 
 # check version installed
-GIT_TAG="$(git -C "$path" describe --tags --exact-match 2>/dev/null)"
+GIT_TAG="$(git -C "$path" describe --tags --exact-match 2>/dev/null || :)"
 GIT_BRANCH="$(git -C "$path" rev-parse --abbrev-ref HEAD 2>/dev/null)"
 GIT_HASH="$(git -C "$path" rev-parse --short HEAD 2>/dev/null)"
 
