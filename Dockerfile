@@ -44,7 +44,7 @@ ENV \
     PLEX_AUTOSCAN_QUEUEFILE="/config/autoscan/queue.db" \
     PLEX_AUTOSCAN_CACHEFILE="/config/autoscan/cache.db" \
     PLEX_AUTOSCAN_GIT="https://github.com/by275/plex_autoscan.git" \
-    PLEX_AUTOSCAN_VERSION_DOCKER=v0.2.1 \
+    PLEX_AUTOSCAN_VERSION_DOCKER=v0.2.2 \
     PLEX_AUTOSCAN_VERSION=docker
 
 # install packages
