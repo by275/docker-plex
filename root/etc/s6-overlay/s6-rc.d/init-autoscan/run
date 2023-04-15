@@ -10,8 +10,8 @@ SERVER_PASS="$(jq -r '.SERVER_PASS' "$PLEX_AUTOSCAN_CONFIG")"
 if [[ -n "${SERVER_PORT}" ]] && [[ -n "${SERVER_PASS}" ]]; then
     PLEX_AUTOSCAN_URL="http://localhost:${SERVER_PORT}/${SERVER_PASS}"
     PLEX_AUTOSCAN_API="http://localhost:${SERVER_PORT}/api/${SERVER_PASS}"
-    printf $PLEX_AUTOSCAN_URL > /var/run/s6/container_environment/PLEX_AUTOSCAN_URL
-    printf $PLEX_AUTOSCAN_API > /var/run/s6/container_environment/PLEX_AUTOSCAN_API
+    printf "%s" "$PLEX_AUTOSCAN_URL" > /var/run/s6/container_environment/PLEX_AUTOSCAN_URL
+    printf "%s" "$PLEX_AUTOSCAN_API" > /var/run/s6/container_environment/PLEX_AUTOSCAN_API
 fi
 
 repo=$(echo "${PLEX_AUTOSCAN_GIT}" | cut -d/ -f4-)
@@ -27,7 +27,7 @@ elif [[ "${#PLEX_AUTOSCAN_VERSION}" -eq 40 ]]; then
     PLEX_AUTOSCAN_VERSION="${PLEX_AUTOSCAN_VERSION:0:7}"
 fi
 
-if ! [[ -n "${PLEX_AUTOSCAN_VERSION}" ]] || [[ -z "${PLEX_AUTOSCAN_VERSION}" ]] || \
+if [[ -z "${PLEX_AUTOSCAN_VERSION}" ]] || \
     [[ "${PLEX_AUTOSCAN_VERSION}" == "docker" ]] || [[ "${PLEX_AUTOSCAN_VERSION}" == "null" ]]; then
     PLEX_AUTOSCAN_VERSION="${PLEX_AUTOSCAN_VERSION_DOCKER}"
 fi

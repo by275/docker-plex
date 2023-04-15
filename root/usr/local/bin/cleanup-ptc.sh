@@ -30,7 +30,7 @@ fi
 # fi
 
 humanReadableSize () {
-	numfmt --to=iec $1 --suffix=B --format="%.2f"
+	numfmt --to=iec "$1" --suffix=B --format="%.2f"
 }
 
 
@@ -52,18 +52,17 @@ if [[ ${CLEANUP_PTC_AFTER_DAYS} =~ ^[0-9]+$ ]]; then
 
 		fileSize=$(stat "$n" -c %s)
 
-		rm -f "$n"
-		if [ $? -eq 0 ]; then
+		if rm -f "$n"; then
 			pSize=$((pSize + fileSize))
 			pCount=$((pCount + 1))
 			# logf "+${CLEANUP_PTC_AFTER_DAYS}D $basefile ($(humanReadableSize $fileSize))"
 		fi
-	done <<<$(find "${PTC_ROOT}" -type f -mtime +$CLEANUP_PTC_AFTER_DAYS -print)
+	done <<<"$(find "${PTC_ROOT}" -type f -mtime +"$CLEANUP_PTC_AFTER_DAYS" -print)"
 fi
 
 # then remove exceed files
 if [[ ${CLEANUP_PTC_EXCEED_GB} =~ ^[0-9]+$ ]] && [[ ${CLEANUP_PTC_FREEUP_GB} =~ ^[0-9]+$ ]]; then
-	maxSize=$(($CLEANUP_PTC_EXCEED_GB * 1000 * 1000 * 1000))
+	maxSize=$((CLEANUP_PTC_EXCEED_GB * 1000 * 1000 * 1000))
 	currentSize="$(du -sb "${PTC_ROOT}" | awk '{print $1}')"
 	if [ "${CLEANUP_PTC_EXCEED_GB}" -eq "0" ]; then
 		# delete all
@@ -71,12 +70,12 @@ if [[ ${CLEANUP_PTC_EXCEED_GB} =~ ^[0-9]+$ ]] && [[ ${CLEANUP_PTC_FREEUP_GB} =~ 
 		pCount=$((pCount + $(find "${PTC_ROOT}" -type f | wc -l)))
 		find "${PTC_ROOT}" -mindepth 1 -delete
 	elif [ "$maxSize" -gt "$currentSize" ]; then
-		logf "Current size of $(humanReadableSize $currentSize) has not exceeded ${CLEANUP_PTC_EXCEED_GB}GB"
+		logf "Current size of $(humanReadableSize "$currentSize") has not exceeded ${CLEANUP_PTC_EXCEED_GB}GB"
 	else
-		freeupSize=$(($CLEANUP_PTC_FREEUP_GB * 1000 * 1000 * 1000))
-		freeupMin=$(($currentSize - $maxSize))
+		freeupSize=$((CLEANUP_PTC_FREEUP_GB * 1000 * 1000 * 1000))
+		freeupMin=$((currentSize - maxSize))
 		freeupSize=$((freeupSize>freeupMin ? freeupSize : freeupMin))
-		freeupTotal=$(($freeupSize + $pSize))
+		freeupTotal=$((freeupSize + pSize))
 
 		while read -r n; do
 			if [ "$pSize" -gt "$freeupTotal" ]; then
@@ -93,13 +92,12 @@ if [[ ${CLEANUP_PTC_EXCEED_GB} =~ ^[0-9]+$ ]] && [[ ${CLEANUP_PTC_FREEUP_GB} =~ 
 
 			fileSize=$(stat "$n" -c %s)
 
-			rm -f "$n"
-			if [ $? -eq 0 ]; then
+			if rm -f "$n"; then
 				pSize=$((pSize + fileSize))
 				pCount=$((pCount + 1))
 				# logf "+${CLEANUP_PTC_EXCEED_GB}GB $basefile ($(humanReadableSize $fileSize))"
 			fi
-		done <<<$(find "${PTC_ROOT}" -type f -print0 | xargs -0 --no-run-if-empty stat --format '%Y :%y %n' | sort -n | cut -d: -f2- | awk '{$1=$2=$3=""; print $0}')
+		done <<<"$(find "${PTC_ROOT}" -type f -print0 | xargs -0 --no-run-if-empty stat --format '%Y :%y %n' | sort -n | cut -d: -f2- | awk '{$1=$2=$3=""; print $0}')"
 	fi
 fi
 

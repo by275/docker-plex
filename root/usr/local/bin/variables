@@ -29,7 +29,7 @@ git_pull() {
     git_repo=$(echo "${git_url}" | cut -d/ -f4-)
     echo "*** checking for updates: ${git_repo%%.git}"
     git -C "${1}" reset --quiet --hard HEAD
-    RESP=$(git -C "${1}" pull 2>&1 |tee /dev/null; exit ${PIPESTATUS[0]}) && \
+    RESP=$(git -C "${1}" pull 2>&1 |tee /dev/null; exit "${PIPESTATUS[0]}") && \
       { if ! echo "$RESP" | grep -q "up to date"; then echo -e "$RESP" | ( TAB=$'    ' ; sed "s/^/$TAB/" ); fi } || \
       { echo "    $RESP"; echo "    re-installing to '${1}'..." && \
         rm -rf "${1}" && git -C "$(dirname "$1")" clone --quiet --depth 1 "${git_url}" > /dev/null
@@ -50,12 +50,12 @@ install_bundle() {
             echo "*** installing ${git_repo}"
             rm -rf "${bundle_root}" && \
                 git -C "${PLUGIN_ROOT}" clone --quiet --depth 1 \
-                    https://github.com/$1 > /dev/null
+                    "https://github.com/$1" > /dev/null
         }
     if [[ "$1" == *SjvaAgent.bundle ]]; then
         # install and update dummy agents
         for BUN in "${bundle_root}"/*/*.bundle; do
-            [ -d "${PLUGIN_ROOT}/$(basename "$BUN")" ] && rm -rf "${PLUGIN_ROOT}/$(basename "$BUN")"
+            [ -d "${PLUGIN_ROOT}/$(basename "$BUN")" ] && rm -rf "${PLUGIN_ROOT:?}/$(basename "$BUN")"
             mv "$BUN" "${PLUGIN_ROOT}"
         done
 
@@ -71,6 +71,6 @@ install_bundle() {
 }
 
 fix_ownership() {
-  find "$@" \! \( -uid $(id -u $PLEX_USER) -gid $(id -g $PLEX_USER) \) -print0 | \
-    xargs -0 --no-run-if-empty chown -h $PLEX_USER:$PLEX_USER
+  find "$@" \! \( -uid "$(id -u "$PLEX_USER")" -gid "$(id -g "$PLEX_USER")" \) -print0 | \
+    xargs -0 --no-run-if-empty chown -h "$PLEX_USER":"$PLEX_USER"
 }

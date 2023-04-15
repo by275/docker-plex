@@ -2,5 +2,5 @@
 
 USER=$(if getent passwd plex > /dev/null; then echo "plex"; else echo "abc"; fi)
 
-exec s6-setuidgid $USER \
-    $(basename "$0").sh "$@" 2>&1
+exec s6-setuidgid "$USER" \
+    "$(basename "$0").sh" "$@" 2>&1

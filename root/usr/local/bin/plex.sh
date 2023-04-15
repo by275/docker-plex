@@ -7,10 +7,10 @@ function analyze() {
   export PLEX_MEDIA_SERVER_APPLICATION_SUPPORT_DIR=/config/Library/Application\ Support
 
   query="SELECT library_section_id, name FROM media_items m LEFT JOIN library_sections l ON l.id = m.library_section_id WHERE library_section_id > 0 GROUP BY name;"
-  IFS=$'\n' sections=($("${PLEX_SQLITE}" "${PLEX_DB_FILE}" "$query"))
+  mapfile -t sections < <("${PLEX_SQLITE}" "${PLEX_DB_FILE}" "$query")
   for id_name in "${sections[@]}"; do
     IFS="|" read -r -a id_name <<< "$id_name"
-    items=($("${PLEX_SQLITE}" "${PLEX_DB_FILE}" "SELECT media_items.metadata_item_id AS metadata_item_id FROM metadata_items, media_items WHERE metadata_items.id = media_items.metadata_item_id AND media_items.width is NULL AND metadata_items.library_section_id = ${id_name[0]}"))
+    mapfile -t items < <("${PLEX_SQLITE}" "${PLEX_DB_FILE}" "SELECT media_items.metadata_item_id AS metadata_item_id FROM metadata_items, media_items WHERE metadata_items.id = media_items.metadata_item_id AND media_items.width is NULL AND metadata_items.library_section_id = ${id_name[0]}")
     echo "${id_name[1]}"
     total="${#items[@]}"
     if [ "$total" -eq 0 ]; then echo "Nothing to analyze!"; continue; fi
@@ -22,7 +22,7 @@ function analyze() {
       ((count++))
       proc_ids="${item} ${proc_ids}"
       printf "\r\033[0K[%3d/%3d] Analyzing %s" "${count}" "${total}" "${proc_ids}"
-      "${PLEX_SCANNER}" --section ${id_name[0]} --analyze --item ${item} &
+      "${PLEX_SCANNER}" --section "${id_name[0]}" --analyze --item "${item}" &
     done
     echo ""
   done
@@ -91,12 +91,12 @@ function repair() {
   echo ">> Cleaning up" && \
   rm -f \
     dump.sql \
-    ${dbfile}-shm \
-    ${dbfile}-wal
+    "${dbfile}-shm" \
+    "${dbfile}-wal"
 }
 
 function optimize() {
-  if [ -n ${PLEX_TOKEN:-} ]; then
+  if [ -n "${PLEX_TOKEN:-}" ]; then
     curl -sX PUT http://localhost:32400/library/optimize?async=1 \
       -H "X-Plex-Token: $PLEX_TOKEN"
   fi
@@ -144,9 +144,9 @@ elif [ "$1" = "analyze" ]; then
 elif [ "$1" = "optimize" ]; then
   optimize
 elif [ "$1" = "claim" ]; then
-  claim
+  claim "$2"
 else
-  echo "ERROR: Unknown command: $@"
+  echo "ERROR: Unknown command: $*"
   echo "Usage: plex {analyze,repair,stats,optimize,claim}"
   exit 1
 fi
