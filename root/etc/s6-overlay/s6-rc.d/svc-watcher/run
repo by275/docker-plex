@@ -26,6 +26,18 @@ done
 CURL_OPTS="-fsS -X POST -o /dev/null"
 IFS="|" read -r -a WATCHER_DIRS <<< "$WATCHER_DIRS"
 
+if [ "${WATCHER_DIRS_BRACE_EXPANSION:-0}" -eq 1 ]; then
+    # applying bash brace expansion for a list of vertical-bar-separated paths
+    # 1. escape spaces using variable substitution
+    # 2. apply brace expansion using 'eval printf'
+    # 3. readarray from the result of #2 and append to existing one
+    expdirs=()
+    for WDIR in "${WATCHER_DIRS[@]}"; do
+        readarray -t -O"${#expdirs[@]}" expdirs <<< "$(eval printf '"%s\n"' "${WDIR// /\\ }")"
+    done
+    WATCHER_DIRS=("${expdirs[@]}")
+fi
+
 exec /usr/local/bin/watcher \
     -dotfiles="${WATCHER_DOTFILES:-false}" \
     -interval="${WATCHER_INTERVAL:-60s}" \
