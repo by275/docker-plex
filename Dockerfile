@@ -57,6 +57,7 @@ RUN \
         gcc \
         git \
         jq \
+        ncdu \
         python3-dev \
         python3-venv \
         sqlite3 \
