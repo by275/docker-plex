@@ -50,7 +50,7 @@ jobs:
           context: .
           file: Dockerfile
           tags: ${{ env.TARGET_IMAGE }}:testing
-          platforms: linux/amd64,linux/arm/v7,linux/arm64
+          platforms: linux/amd64,linux/arm64
           build-args: |
             BASE_IMAGE=${{ env.LSIO_IMAGE }}:latest
       - 
@@ -85,7 +85,7 @@ jobs:
           tags: |
             ${{ env.TARGET_IMAGE }}:lsio
             ${{ env.TARGET_IMAGE }}:lsio-${{ env.APP_VER }}
-          platforms: linux/amd64,linux/arm/v7,linux/arm64
+          platforms: linux/amd64,linux/arm64
           build-args: |
             BASE_IMAGE=${{ env.LSIO_IMAGE }}:latest
           push: true
