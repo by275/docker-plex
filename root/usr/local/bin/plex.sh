@@ -126,7 +126,7 @@ function claim() {
 
   if [ -n "$PlexOnlineToken" ]; then
     echo "Server claimed successfully."
-    sed -i "s/\/>/ PlexOnlineToken=\"${PlexOnlineToken}\"\/>/g" "${PLEX_PREFERENCES}"
+    sed -i "s/\(<Preferences [^>]*PlexOnlineToken=\"\)[^\"]*\"/\1${PlexOnlineToken}\"/" "${PLEX_PREFERENCES}"
   else
     echo "Unable to claim Plex server."
   fi
