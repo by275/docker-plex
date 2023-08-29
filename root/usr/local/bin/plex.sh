@@ -6,7 +6,7 @@ function analyze() {
   export LD_LIBRARY_PATH=/usr/lib/plexmediaserver/lib
   export PLEX_MEDIA_SERVER_APPLICATION_SUPPORT_DIR=/config/Library/Application\ Support
 
-  query="SELECT library_section_id, name FROM media_items m LEFT JOIN library_sections l ON l.id = m.library_section_id WHERE library_section_id > 0 GROUP BY name;"
+  query="SELECT library_section_id, name FROM media_items m LEFT JOIN library_sections l ON l.id = m.library_section_id WHERE library_section_id > 0 and section_type != 8 GROUP BY name;"
   mapfile -t sections < <("${PLEX_SQLITE}" "${PLEX_DB_FILE}" "$query")
   for id_name in "${sections[@]}"; do
     IFS="|" read -r -a id_name <<< "$id_name"
