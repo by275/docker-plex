@@ -39,12 +39,6 @@ if [ "${PATCH_LOCAL_MEDIA_BUNDLE}" = "true" ]; then
     fi
 fi
 
-# patch SjvaAgent.bundle
-file="${PLUGIN_ROOT}/SjvaAgent.bundle/Contents/Code/module_jav_censored.py"
-if [ -f "$file" ]; then
-    sed -i "s@playvideo/%s'@playvideo/%s|%s'@g" "$file"
-fi
-
 # export libpms if dir exists
 [ -d /libpms ] && \
     cp -r /usr/lib/plexmediaserver/* /libpms/
