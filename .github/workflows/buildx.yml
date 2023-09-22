@@ -7,6 +7,8 @@ on:
   push:
     branches:
       - 'master'
+    paths-ignore:
+      - '**/README.md'
 
 env:
   TARGET_IMAGE: ghcr.io/by275/plex
