@@ -41,7 +41,8 @@ fi
 
 # export libpms if dir exists
 [ -d /libpms ] && \
-    cp -r /usr/lib/plexmediaserver/* /libpms/
+    rm -rf /libpms/Resources/Plug-ins* && \
+    cp -rp /usr/lib/plexmediaserver/* /libpms/
 
 # permission
 fix_ownership "${PLUGIN_ROOT}" "${SCANNER_ROOT}"
