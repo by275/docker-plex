@@ -35,7 +35,7 @@ jobs:
       -
         name: Checkout
         if: env.X_SKIP == 'false'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       -
         name: Set up QEMU
         if: env.X_SKIP == 'false'
@@ -47,7 +47,7 @@ jobs:
       - 
         name: Initial Buildx
         if: env.X_SKIP == 'false'
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: Dockerfile
@@ -80,7 +80,7 @@ jobs:
       - 
         name: Buildx and Push
         if: env.X_SKIP == 'false'
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: Dockerfile
