@@ -1,4 +1,4 @@
-ARG BASE_IMAGE
+ARG BASE_IMAGE="ghcr.io/linuxserver/plex:latest"
 
 FROM ${BASE_IMAGE} AS base
 FROM ghcr.io/by275/base:ubuntu AS prebuilt
@@ -33,7 +33,7 @@ RUN \
 # 
 FROM $BASE_IMAGE
 LABEL maintainer="by275"
-LABEL org.opencontainers.image.source https://github.com/by275/docker-plex
+LABEL org.opencontainers.image.source=https://github.com/by275/docker-plex
 
 ARG DEBIAN_FRONTEND="noninteractive"
 ARG APT_MIRROR="archive.ubuntu.com"
