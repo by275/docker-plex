@@ -17,6 +17,8 @@ env:
 jobs:
   build-lsio:
     runs-on: ubuntu-latest
+    permissions:
+      packages: write
     steps:
       - 
         name: Check if buildx required
