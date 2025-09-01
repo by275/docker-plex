@@ -20,7 +20,10 @@ rm -rf "${tmpdir}"
 # install bundles
 # 
 MORE_BUNDLES="soju6jan/SjvaAgent.bundle $MORE_BUNDLES"  # space-separated github "{username}/{repo}"
-install_bundle $MORE_BUNDLES
+IFS=" " read -r -a MORE_BUNDLES <<< "$MORE_BUNDLES"
+for MORE_BUNDLE in "${MORE_BUNDLES[@]}"; do
+    install_bundle "${MORE_BUNDLE}"
+done
 
 # patch local media bundle
 if [ "${PATCH_LOCAL_MEDIA_BUNDLE}" = "true" ]; then
