@@ -40,6 +40,15 @@ if [ "${PATCH_LOCAL_MEDIA_BUNDLE}" = "true" ]; then
     else
         echo "ERROR: File not found: '${file}'"
     fi
+    # another patch - https://forums.plex.tv/t/bug-in-legacy-localmedia-agent-prevent-year-based-seasons-from-pulling-in-subtitles/826314/15
+    file="/usr/lib/plexmediaserver/Resources/Plug-ins-$vertag/LocalMedia.bundle/Contents/Code/__init__.py"
+    if [[ -e "$file" ]]; then
+        [[ ! -e "$file.backup" ]] && cp "$file" "$file.backup"
+        sed -i 's/int(s) < 1900/int(s) < 3000/g'
+        pattern="^  def process_metadata\(.+\):$" "$file"
+    else
+        echo "ERROR: File not found: '${file}'"
+    fi    
 fi
 
 # export libpms if dir exists
