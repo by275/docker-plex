@@ -44,8 +44,7 @@ if [ "${PATCH_LOCAL_MEDIA_BUNDLE}" = "true" ]; then
     file="/usr/lib/plexmediaserver/Resources/Plug-ins-$vertag/LocalMedia.bundle/Contents/Code/__init__.py"
     if [[ -e "$file" ]]; then
         [[ ! -e "$file.backup" ]] && cp "$file" "$file.backup"
-        sed -i 's/int(s) < 1900/int(s) < 3000/g'
-        pattern="^  def process_metadata\(.+\):$" "$file"
+        sed -i 's/int(s) < 1900/int(s) < 3000/g' "$file"
     else
         echo "ERROR: File not found: '${file}'"
     fi    
