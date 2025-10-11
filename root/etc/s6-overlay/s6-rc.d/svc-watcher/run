@@ -24,7 +24,15 @@ done
 
 
 CURL_OPTS="-fsS -X POST -o /dev/null"
-IFS="|" read -r -a WATCHER_DIRS <<< "$WATCHER_DIRS"
+
+# replace all newlines with |, then split on |
+IFS="|" read -r -a WDIRS <<< "${WATCHER_DIRS//$'\n'/|}"
+
+WATCHER_DIRS=()
+for dir in "${raw_dirs[@]}"; do
+    dir_trimmed="$(echo "$dir" | xargs)"  # remove whitespace
+    [[ -n "$dir_trimmed" ]] && WATCHER_DIRS+=("$dir_trimmed")
+done
 
 if [ "${WATCHER_DIRS_BRACE_EXPANSION:-0}" -eq 1 ]; then
     # applying bash brace expansion for a list of vertical-bar-separated paths
