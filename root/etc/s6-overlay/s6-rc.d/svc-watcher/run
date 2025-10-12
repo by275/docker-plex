@@ -29,7 +29,7 @@ CURL_OPTS="-fsS -X POST -o /dev/null"
 IFS="|" read -r -a WDIRS <<< "${WATCHER_DIRS//$'\n'/|}"
 
 WATCHER_DIRS=()
-for dir in "${raw_dirs[@]}"; do
+for dir in "${WDIRS[@]}"; do
     dir_trimmed="$(echo "$dir" | xargs)"  # remove whitespace
     [[ -n "$dir_trimmed" ]] && WATCHER_DIRS+=("$dir_trimmed")
 done
