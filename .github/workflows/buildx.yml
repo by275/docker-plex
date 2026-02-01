@@ -13,6 +13,8 @@ on:
 env:
   TARGET_IMAGE: ghcr.io/by275/plex
   LSIO_IMAGE: ghcr.io/linuxserver/plex
+  X_SKIP: "true"
+  APP_VER: unknown
 
 jobs:
   build-lsio:
