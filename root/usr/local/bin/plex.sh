@@ -41,36 +41,45 @@ function stats() {
   echo ""
 
   query="SELECT count(*) FROM media_items"
-  result=$("$PLEX_SQLITE" -readonly -header -line "$PLEX_DB_FILE" "$query")
-  echo "${result:11} media_items in library"
+  result=$("$PLEX_SQLITE" -readonly "$PLEX_DB_FILE" "$query")
+  echo "${result} media_items in library"
 
   echo ""
 
   query="SELECT count(*) FROM media_parts WHERE deleted_at is not null"
-  result=$("$PLEX_SQLITE" -readonly -header -line "$PLEX_DB_FILE" "$query")
-  echo "${result:11} media_parts marked as deleted"
+  result=$("$PLEX_SQLITE" -readonly "$PLEX_DB_FILE" "$query")
+  echo "${result} media_parts marked as deleted"
 
   query="SELECT count(*) FROM metadata_items WHERE deleted_at is not null"
-  result=$("$PLEX_SQLITE" -readonly -header -line "$PLEX_DB_FILE" "$query")
-  echo "${result:11} metadata_items marked as deleted"
+  result=$("$PLEX_SQLITE" -readonly "$PLEX_DB_FILE" "$query")
+  echo "${result} metadata_items marked as deleted"
 
   query="SELECT count(*) FROM directories WHERE deleted_at is not null"
-  result=$("$PLEX_SQLITE" -readonly -header -line "$PLEX_DB_FILE" "$query")
-  echo "${result:11} directories marked as deleted"
+  result=$("$PLEX_SQLITE" -readonly "$PLEX_DB_FILE" "$query")
+  echo "${result} directories marked as deleted"
 
   echo ""
 
   query="SELECT count(*) FROM metadata_items, media_items WHERE metadata_items.id = media_items.metadata_item_id AND metadata_items.metadata_type BETWEEN 1 and 4 AND media_items.width is NULL"
-  result=$("$PLEX_SQLITE" -readonly -header -line "$PLEX_DB_FILE" "$query")
-  echo "${result:11} metadata_items missing analyzation info"
+  result=$("$PLEX_SQLITE" -readonly "$PLEX_DB_FILE" "$query")
+  echo "${result} metadata_items missing analyzation info"
+
+  if [ "$result" -gt 0 ]; then
+    query="SELECT metadata_items.title FROM metadata_items, media_items 
+      WHERE metadata_items.id = media_items.metadata_item_id 
+      AND metadata_items.metadata_type BETWEEN 1 and 4 
+      AND media_items.width is NULL"
+    "$PLEX_SQLITE" -readonly -column "$PLEX_DB_FILE" "$query"| awk '{print "    " $0}'
+    echo ""
+  fi
 
   query="SELECT count(*) FROM metadata_items meta join media_items media on media.metadata_item_id = meta.id join media_parts part on part.media_item_id = media.id where part.extra_data not like '%deepAnalysisVersion=2%' and meta.metadata_type in (1, 4, 12) and part.file != '';"
-  result=$("$PLEX_SQLITE" -readonly -header -line "$PLEX_DB_FILE" "$query")
-  echo "${result:11} files missing deep analyzation info"
+  result=$("$PLEX_SQLITE" -readonly "$PLEX_DB_FILE" "$query")
+  echo "${result} files missing deep analyzation info"
 
   query="SELECT COUNT(0) FROM media_parts mp JOIN media_items mi ON mi.id = mp.media_item_id WHERE mi.library_section_id IN ( SELECT id FROM library_sections WHERE section_type = 2 ) AND mp.extra_data NOT LIKE '%intros=%' AND ( SELECT 1 FROM taggings WHERE taggings.metadata_item_id = mi.metadata_item_id AND taggings.text = 'intro' LIMIT 1 ) IS NULL;"
-  result=$("$PLEX_SQLITE" -readonly -header -line "$PLEX_DB_FILE" "$query")
-  echo "${result:11} not analyzed for intros"
+  result=$("$PLEX_SQLITE" -readonly "$PLEX_DB_FILE" "$query")
+  echo "${result} not analyzed for intros"
 }
 
 
