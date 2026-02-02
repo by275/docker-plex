@@ -18,10 +18,11 @@ if [ ! -d "${PTC_ROOT}" ]; then
 fi
 
 # If script is already running; abort.
-if pidof -o %PPID -x "$(basename "$0")">/dev/null; then
+exec 9>/tmp/ptc_cleanup.lock
+flock -n 9 || {
 	logf "Already in progress. Aborting!"
 	exit 3
-fi
+}
 
 # # Check if any files exist, if not exit
 # if [ "$(find "${PTC_ROOT}" -type f | wc -l)" = "0" ];then
@@ -41,63 +42,41 @@ pCount=0
 
 # remove old files first
 if [[ ${CLEANUP_PTC_AFTER_DAYS} =~ ^[0-9]+$ ]]; then
-	while read -r n; do
-		# sometimes empty stdin can be redirected by the result of find
-		if [ ! -f "$n" ]; then continue; fi
-
-		# # Find the pathname relative to the root of your remote and store filename
-		# filename="$(echo "$n" | sed -e "s@${PTC_ROOT}@@")"
-		# destpath="$(dirname "$n" | sed -e "s@${PTC_ROOT}@@")"
-		# basefile="$(basename "$n")"
-
-		fileSize=$(stat "$n" -c %s)
-
-		if rm -f "$n"; then
-			pSize=$((pSize + fileSize))
+	while IFS=$'\t' read -r -d '' size file; do
+		if rm -f -- "$file"; then
+			pSize=$((pSize + size))
 			pCount=$((pCount + 1))
-			# logf "+${CLEANUP_PTC_AFTER_DAYS}D $basefile ($(humanReadableSize $fileSize))"
 		fi
-	done <<<"$(find "${PTC_ROOT}" -type f -mtime +"$CLEANUP_PTC_AFTER_DAYS" -print)"
+	done < <(find "${PTC_ROOT}" -type f -mtime +"$CLEANUP_PTC_AFTER_DAYS" -printf "%s\t%p\0")
 fi
 
 # then remove exceed files
 if [[ ${CLEANUP_PTC_EXCEED_GB} =~ ^[0-9]+$ ]] && [[ ${CLEANUP_PTC_FREEUP_GB} =~ ^[0-9]+$ ]]; then
-	maxSize=$((CLEANUP_PTC_EXCEED_GB * 1000 * 1000 * 1000))
-	currentSize="$(du -sb "${PTC_ROOT}" | awk '{print $1}')"
+	currentSize=$(du -sb --apparent-size "$PTC_ROOT" | cut -f1)
 	if [ "${CLEANUP_PTC_EXCEED_GB}" -eq "0" ]; then
 		# delete all
+		fCount=$(find "$PTC_ROOT" -type f | wc -l)
+		find "$PTC_ROOT" -mindepth 1 -delete
 		pSize=$((pSize + currentSize))
-		pCount=$((pCount + $(find "${PTC_ROOT}" -type f | wc -l)))
-		find "${PTC_ROOT}" -mindepth 1 -delete
-	elif [ "$maxSize" -gt "$currentSize" ]; then
-		logf "Current size of $(humanReadableSize "$currentSize") has not exceeded ${CLEANUP_PTC_EXCEED_GB}GB"
+		pCount=$((pCount + fCount))
 	else
-		freeupSize=$((CLEANUP_PTC_FREEUP_GB * 1000 * 1000 * 1000))
-		freeupMin=$((currentSize - maxSize))
-		freeupSize=$((freeupSize>freeupMin ? freeupSize : freeupMin))
-		freeupTotal=$((freeupSize + pSize))
+		maxSize=$((CLEANUP_PTC_EXCEED_GB * 1024 * 1024 * 1024))
+		if [ "$currentSize" -le "$maxSize" ]; then
+			logf "Current size $(humanReadableSize "$currentSize") not exceeded ${CLEANUP_PTC_EXCEED_GB}GB"
+		else
+			freeupSize=$((CLEANUP_PTC_FREEUP_GB * 1024 * 1024 * 1024))
+			freeupMin=$((currentSize - maxSize))
+			freeupSize=$((freeupSize > freeupMin ? freeupSize : freeupMin))
+			freeupTarget=$((pSize + freeupSize))
 
-		while read -r n; do
-			if [ "$pSize" -gt "$freeupTotal" ]; then
-				break
-			fi
-
-			# sometimes empty stdin can be redirected by the result of find
-			if [ ! -f "$n" ]; then continue; fi
-
-			# Find the pathname relative to the rsoot of your remote and store filename
-			# filename="$(echo "$n" | sed -e "s@${PTC_ROOT}@@")"
-			# destpath="$(dirname "$n" | sed -e "s@${PTC_ROOT}@@")"
-			# basefile="$(basename "$n")"
-
-			fileSize=$(stat "$n" -c %s)
-
-			if rm -f "$n"; then
-				pSize=$((pSize + fileSize))
-				pCount=$((pCount + 1))
-				# logf "+${CLEANUP_PTC_EXCEED_GB}GB $basefile ($(humanReadableSize $fileSize))"
-			fi
-		done <<<"$(find "${PTC_ROOT}" -type f -print0 | xargs -0 --no-run-if-empty stat --format '%Y :%y %n' | sort -n | cut -d: -f2- | awk '{$1=$2=$3=""; print $0}')"
+			while IFS=$'\t' read -r -d '' _ size file; do
+				[ "$pSize" -ge "$freeupTarget" ] && break
+				if rm -f -- "$file"; then
+					pSize=$((pSize + size))
+					pCount=$((pCount + 1))
+				fi
+			done < <(find "$PTC_ROOT" -type f -printf '%T@\t%s\t%p\0' | sort -z -n)
+		fi
 	fi
 fi
 
