@@ -34,29 +34,75 @@ function stats() {
 
   echo ""
 
-  # https://github.com/animosity22/homescripts/blob/master/scripts/plex-library-stats
-  query="SELECT Id, Items, Library FROM ( SELECT library_section_id AS Id, COUNT(duration) AS Items, name AS Library FROM media_items m LEFT JOIN library_sections l ON l.id = m.library_section_id WHERE library_section_id > 0 GROUP BY name );"
+  query="
+    WITH
+    mi AS (SELECT library_section_id, COUNT(*) cnt FROM media_items GROUP BY 1),
+    mp AS (SELECT mi.library_section_id, COUNT(*) cnt FROM media_items mi JOIN media_parts mp ON mp.media_item_id = mi.id GROUP BY 1),
+    md AS (SELECT library_section_id, COUNT(*) cnt FROM metadata_items GROUP BY 1)
+    SELECT Id, Items, Parts, Metadata, Library
+    FROM (
+        SELECT
+            l.id AS Id,
+            IFNULL(mi.cnt, 0) AS Items,
+            IFNULL(mp.cnt, 0) AS Parts,
+            IFNULL(md.cnt, 0) AS Metadata,
+            l.name AS Library,
+            0 AS Ord
+        FROM library_sections l
+        LEFT JOIN mi ON mi.library_section_id = l.id
+        LEFT JOIN mp ON mp.library_section_id = l.id
+        LEFT JOIN md ON md.library_section_id = l.id
+        WHERE l.id > 0
+
+        UNION ALL
+
+        SELECT
+            '--',
+            IFNULL((SELECT SUM(cnt) FROM mi), 0),
+            IFNULL((SELECT SUM(cnt) FROM mp), 0),
+            IFNULL((SELECT SUM(cnt) FROM md), 0),
+            'TOTAL',
+            1
+    )
+    ORDER BY Ord, CAST(Id AS INTEGER);"
+  echo "=== [ Table 1: Library Inventory ] ==="
   "$PLEX_SQLITE" -readonly -header -column "$PLEX_DB_FILE" "$query"
 
   echo ""
 
-  query="SELECT count(*) FROM media_items"
-  result=$("$PLEX_SQLITE" -readonly "$PLEX_DB_FILE" "$query")
-  echo "${result} media_items in library"
+  query="
+    WITH
+    dp AS (SELECT mi.library_section_id, COUNT(*) cnt FROM media_parts mp JOIN media_items mi ON mp.media_item_id = mi.id WHERE mp.deleted_at IS NOT NULL GROUP BY 1),
+    dm AS (SELECT library_section_id, COUNT(*) cnt FROM metadata_items WHERE deleted_at IS NOT NULL GROUP BY 1),
+    dd AS (SELECT library_section_id, COUNT(*) cnt FROM directories WHERE deleted_at IS NOT NULL GROUP BY 1)
+    SELECT Id, Parts, Metadata, Dirs, Library
+    FROM (
+        SELECT
+            l.id AS Id,
+            IFNULL(dp.cnt, 0) AS Parts,
+            IFNULL(dm.cnt, 0) AS Metadata,
+            IFNULL(dd.cnt, 0) AS Dirs,
+            l.name AS Library,
+            0 AS Ord
+        FROM library_sections l
+        LEFT JOIN dp ON dp.library_section_id = l.id
+        LEFT JOIN dm ON dm.library_section_id = l.id
+        LEFT JOIN dd ON dd.library_section_id = l.id
+        WHERE l.id > 0
 
-  echo ""
+        UNION ALL
 
-  query="SELECT count(*) FROM media_parts WHERE deleted_at is not null"
-  result=$("$PLEX_SQLITE" -readonly "$PLEX_DB_FILE" "$query")
-  echo "${result} media_parts marked as deleted"
-
-  query="SELECT count(*) FROM metadata_items WHERE deleted_at is not null"
-  result=$("$PLEX_SQLITE" -readonly "$PLEX_DB_FILE" "$query")
-  echo "${result} metadata_items marked as deleted"
-
-  query="SELECT count(*) FROM directories WHERE deleted_at is not null"
-  result=$("$PLEX_SQLITE" -readonly "$PLEX_DB_FILE" "$query")
-  echo "${result} directories marked as deleted"
+        SELECT
+            '--',
+            IFNULL((SELECT SUM(cnt) FROM dp), 0),
+            IFNULL((SELECT SUM(cnt) FROM dm), 0),
+            IFNULL((SELECT SUM(cnt) FROM dd), 0),
+            'TOTAL',
+            1
+    )
+    ORDER BY Ord, CAST(Id AS INTEGER);"
+  echo "=== [ Table 2: Marked as Deleted ] ==="
+  "$PLEX_SQLITE" -readonly -header -column "$PLEX_DB_FILE" "$query"
 
   echo ""
 
