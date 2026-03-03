@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD060 -->
+
 # docker-plex
 
 Docker image for running Plex Media Server with some teaks
@@ -22,7 +24,7 @@ A new image will be re-built and pushed every 6 hours if its base has any change
 
 [Source](https://raw.githubusercontent.com/by275/docker-base/main/_/etc/cont-init.d/install-pkg)
 
- ENV  | Description  | Default  |
+| ENV  | Description  | Default  |
 |---|---|---|
 | `APT_MIRROR`  | if you want to change apt repository |  |
 | `INSTALL_APT_PKGS`  | run `apt-get install -yqq --no-install-recommends ${INSTALL_APT_PKGS}` silently for you |  |
@@ -34,7 +36,7 @@ Sleep 30s until desired mounts, dirs, or files are found.
 
 [Source](https://raw.githubusercontent.com/by275/docker-base/main/_/etc/cont-init.d/wait-for-mnt)
 
- ENV  | Description  | Default  |
+| ENV  | Description  | Default  |
 |---|---|---|
 | `WAIT_RCLONE_MNTS`  | a `\|`-separated list of mount points for checking fuse.rclone mounts |  |
 | `WAIT_MFS_MNTS`  | a `\|`-separated list of mount points for checking fuse.mergerfs mounts |  |
@@ -43,7 +45,7 @@ Sleep 30s until desired mounts, dirs, or files are found.
 
 ### Installing Plex Agents from github repo
 
- ENV  | Description  | Default  |
+| ENV  | Description  | Default  |
 |---|---|---|
 | `MORE_BUNDLES`  | a space-separated list of `{owner}/{repo}[@branch_or_tag]` sources, e.g. `ThePornDatabase/ThePornDB.bundle@main` | `soju6jan/SjvaAgent.bundle` |
 
@@ -51,7 +53,7 @@ Sleep 30s until desired mounts, dirs, or files are found.
 
 This patch prevents for PMS from reading mp4 metadata, which is unnecessary and useful if you are running PMS on cloud storage.
 
-ENV  | Description  | Default  |
+| ENV  | Description  | Default  |
 |---|---|---|
 | `PATCH_LOCAL_MEDIA_BUNDLE`  | set something other than `true` to disable | `true` |
 
@@ -61,7 +63,7 @@ ENV  | Description  | Default  |
 
 to cleaning up PhotoTranscoder directory `/config/Library/Application Support/Plex Media Server/Cache/PhotoTranscoder` for recovering disk space based on policy.
 
-ENV  | Description  | Default  |
+| ENV  | Description  | Default  |
 |---|---|---|
 | `CLEANUP_PTC_CRON`  | cron for scheduling jobs |  |
 | `CLEANUP_PTC_AFTER_DAYS`  | delete files older than this |  |
@@ -82,7 +84,7 @@ useful plex-related operation with following subcommands:
 
 `https://github.com/by275/plex_autoscan` is installed to `/opt/plex_autoscan` and svc-autoscan will be activated if `/config/autoscan/config.json` file exists.
 
-ENV  | Description  | Default  |
+| ENV  | Description  | Default  |
 |---|---|---|
 | `PLEX_AUTOSCAN_VERSION`  | to pin version. possible chocies include `latest` or git branch/tag/hash | `docker` |
 
@@ -94,7 +96,7 @@ An example of usage:
 
 rclone mount (update change in remote by polling or manual vfs/refresh ) -> watcher (detect filesystem changes and make an API request for the event) -> plex autoscan (execute PMS scanner for you)
 
-ENV  | Description  | Default  |
+| ENV  | Description  | Default  |
 |---|---|---|
 | `WATCHER_DIRS`  | a `\|`-separated list of dir paths for watching |  |
 | `WATCHER_INTERVAL`  |  | `60s` |
