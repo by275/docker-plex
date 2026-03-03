@@ -19,7 +19,7 @@ rm -rf "${tmpdir}"
 # 
 # install bundles
 # 
-MORE_BUNDLES="soju6jan/SjvaAgent.bundle $MORE_BUNDLES"  # space-separated github "{username}/{repo}"
+MORE_BUNDLES="${MORE_BUNDLES:-soju6jan/SjvaAgent.bundle}"  # space-separated github "{owner}/{repo}"
 IFS=" " read -r -a MORE_BUNDLES <<< "$MORE_BUNDLES"
 for MORE_BUNDLE in "${MORE_BUNDLES[@]}"; do
     install_bundle "${MORE_BUNDLE}"

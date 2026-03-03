@@ -45,7 +45,7 @@ Sleep 30s until desired mounts, dirs, or files are found.
 
  ENV  | Description  | Default  |
 |---|---|---|
-| `MORE_BUNDLES`  | a space-separated list of `{owner}/{repo}` containig source, e.g. `ThePornDatabase/ThePornDB.bundle` |  |
+| `MORE_BUNDLES`  | a space-separated list of `{owner}/{repo}` sources, e.g. `ThePornDatabase/ThePornDB.bundle` | `soju6jan/SjvaAgent.bundle` |
 
 ### Patching LocalMedia.bundle
 
