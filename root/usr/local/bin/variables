@@ -43,16 +43,32 @@ is_git_dir() {
 }
 
 install_bundle() {
-    git_repo=$(echo "${1}" | cut -d/ -f2)
+    bundle_spec="$1"
+    bundle_repo="${bundle_spec%@*}"
+    bundle_ref=""
+    if [[ "${bundle_spec}" == *"@"* ]]; then
+        bundle_ref="${bundle_spec##*@}"
+    fi
+
+    git_repo=$(echo "${bundle_repo}" | cut -d/ -f2)
     bundle_root="${PLUGIN_ROOT}/${git_repo}"
-    git_pull "${bundle_root}" || \
-        {
-            echo "*** installing ${git_repo}"
-            rm -rf "${bundle_root}" && \
-                git -C "${PLUGIN_ROOT}" clone --quiet --depth 1 \
-                    "https://github.com/$1" > /dev/null
-        }
-    if [[ "$1" == *SjvaAgent.bundle ]]; then
+
+    if [ -n "${bundle_ref}" ]; then
+        echo "*** installing/updating ${git_repo}@${bundle_ref}"
+        rm -rf "${bundle_root}" && \
+            git -C "${PLUGIN_ROOT}" clone --quiet --depth 1 --branch "${bundle_ref}" \
+                "https://github.com/${bundle_repo}" > /dev/null
+    else
+        git_pull "${bundle_root}" || \
+            {
+                echo "*** installing ${git_repo}"
+                rm -rf "${bundle_root}" && \
+                    git -C "${PLUGIN_ROOT}" clone --quiet --depth 1 \
+                        "https://github.com/${bundle_repo}" > /dev/null
+            }
+    fi
+
+    if [[ "${bundle_repo}" == *SjvaAgent.bundle ]]; then
         # install and update dummy agents
         for BUN in "${bundle_root}"/*/*.bundle; do
             [ -d "${PLUGIN_ROOT}/$(basename "$BUN")" ] && rm -rf "${PLUGIN_ROOT:?}/$(basename "$BUN")"
