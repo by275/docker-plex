@@ -35,88 +35,172 @@ git_owner_repo_from_url() {
   echo "$url"
 }
 
+git_safe() {
+  local path="$1"
+  shift
+  git -c safe.directory="${path}" -C "${path}" "$@"
+}
+
 git_pull() {
-  if [ $# -lt 1 ]; then return 1; fi
-  if [ -z "$1" ] || [ ! -d "$1" ]; then return 1; fi
+  # return codes
+  # 0 = updated or already up-to-date
+  # 1 = reinstall recommended
+  # 2 = reinstall won't help
+  # 
+  # depends on is_git_dir() git_safe() git_owner_repo_from_url()
 
-  # add safe.directory (prevent dubious ownership)
-  git config --global --get-all safe.directory | grep -Fxq "$1" || \
-    git config --global --add safe.directory "$1"
+  local repo="$1"
+  indent() { sed 's/^/    /'; }
 
-  # git working tree or exit 1
-  is_git_dir "$1" || return 1
+  [ -n "$repo" ] || return 2
+  [ -d "$repo" ] || return 1
 
-  local git_dir git_url git_repo before_head after_head RESP
-  git_dir=$(git -C "$1" rev-parse --absolute-git-dir 2>/dev/null) || return 1
+  # not a git repo -> reinstall recommended
+  is_git_dir "$repo" || return 1
 
-  # cleanup stale lock
-  find "$git_dir" -name "index.lock" -exec rm -f {} \;
+  local git_dir url owner_repo branch before after out rc
 
-  git_url=$(git -C "$1" config --get remote.origin.url 2>/dev/null) || return 1
-  git_repo=$(git_owner_repo_from_url "$git_url") || return 1
-  echo "*** checking for updates: ${git_repo%%.git}"
+  # cleanup stale lock (best-effort)
+  git_dir="$(git_safe "$repo" rev-parse --absolute-git-dir 2>/dev/null)" || return 1
+  rm -f "$git_dir/index.lock" 2>/dev/null
 
-  git -C "$1" reset --quiet --hard HEAD || return 1
+  # missing origin -> reinstall recommended
+  url="$(git_safe "$repo" config --get remote.origin.url 2>/dev/null)" || return 1
+  branch="$(git_safe "$repo" rev-parse --abbrev-ref HEAD 2>/dev/null)" || return 1
+  [ "$branch" = "HEAD" ] && { echo "detached HEAD (no branch)" | indent; return 2; }
 
-  before_head=$(git -C "$1" rev-parse -q --verify HEAD 2>/dev/null || echo "")
+  owner_repo="$(git_owner_repo_from_url "$url" 2>/dev/null || echo "$url" | cut -d/ -f4-)"
+  before="$(git_safe "$repo" rev-parse HEAD 2>/dev/null)"
 
-  RESP=$(git -C "$1" pull 2>&1 | tee /dev/null; exit "${PIPESTATUS[0]}") && {
-    after_head=$(git -C "$1" rev-parse -q --verify HEAD 2>/dev/null || echo "")
-    if [ -n "$before_head" ] && [ -n "$after_head" ] && [ "$before_head" != "$after_head" ]; then
-      echo -e "$RESP" | ( TAB=$'    '; sed "s/^/$TAB/" )
-    fi
-  } || {
-    echo "    $RESP"
-    echo "    re-installing to '$1'..."
-    rm -rf "$1" && git -C "$(dirname "$1")" clone --quiet --depth 1 "$git_url" > /dev/null
+  echo "*** checking for updates: $owner_repo"
+  out="$(git_safe "$repo" fetch --prune origin 2>&1)"; rc=$?
+  if [ $rc -ne 0 ]; then
+    echo "$out" | indent
+    grep -Eq \
+      'not a git repository|bad object|loose object|index file corrupt|object file.*is empty|corrupt pack' \
+      <<<"$out" && return 1
+    return 2
+  fi
+
+  # remote branch missing -> reinstall won't help (can't preserve branch policy)
+  git_safe "$repo" show-ref --verify --quiet "refs/remotes/origin/$branch" || {
+    echo "missing remote branch: origin/$branch" | indent
+    return 2
   }
+
+  out="$(git_safe "$repo" reset --quiet --hard "origin/$branch" 2>&1)"; rc=$?
+  if [ $rc -ne 0 ]; then
+    echo "$out" | indent
+    return 1
+  fi
+
+  after="$(git_safe "$repo" rev-parse HEAD 2>/dev/null)"
+  if [ "$before" != "$after" ]; then
+    echo "updated: ($branch) ${before:0:7} -> ${after:0:7}" | indent
+  fi
+
+  return 0
 }
 
 is_git_dir() {
-    if [ "$(git -C "$1" rev-parse --is-inside-work-tree 2>/dev/null)" = "true" ]; then return 0; fi
+    if [ "$(git_safe "$1" rev-parse --is-inside-work-tree 2>/dev/null)" = "true" ]; then return 0; fi
     return 1
 }
 
-install_bundle() {
-    bundle_spec="$1"
-    bundle_repo="${bundle_spec%@*}"
-    bundle_ref=""
-    if [[ "${bundle_spec}" == *"@"* ]]; then
-        bundle_ref="${bundle_spec##*@}"
-    fi
+is_same_repo() {
+  if [ $# -lt 2 ]; then return 1; fi
+  local repo_path="$1"
+  local target_repo="$2" # owner/repo
+  local target_branch="${3:-}"
+  is_git_dir "$repo_path" || return 1
 
-    git_repo=$(echo "${bundle_repo}" | cut -d/ -f2)
+  local url current_repo
+  url=$(git_safe "$repo_path" config --get remote.origin.url 2>/dev/null) || return 1
+  current_repo=$(git_owner_repo_from_url "$url") || return 1
+  [ -n "$current_repo" ] && [ "$current_repo" = "$target_repo" ] || return 1
+
+  local current_branch
+  current_branch=$(git_safe "$repo_path" rev-parse --abbrev-ref HEAD 2>/dev/null) || return 1
+  [ "$current_branch" != "HEAD" ] || return 1
+
+  if [ -z "$target_branch" ]; then
+    local default_branch
+    default_branch=$(git_safe "$repo_path" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null) \
+      && target_branch="${default_branch#origin/}" || return 1
+  fi
+  [ "$current_branch" = "$target_branch" ] || return 1
+  return 0
+}
+
+install_bundle() {
+    local bundle_spec="$1" # repo/owner[@branch]
+    [ -n "${bundle_spec}" ] || return 1
+
+    local bundle_repo bundle_ref git_repo bundle_root mvto rc
+    bundle_repo="${bundle_spec%@*}" # repo/owner
+    [[ "${bundle_spec}" == *"@"* ]] && bundle_ref="${bundle_spec##*@}"
+
+    git_repo="${bundle_repo##*/}"
     bundle_root="${PLUGIN_ROOT}/${git_repo}"
 
-    if [ -n "${bundle_ref}" ]; then
-        echo "*** installing/updating ${git_repo}@${bundle_ref}"
-        rm -rf "${bundle_root}" && \
-            git -C "${PLUGIN_ROOT}" clone --quiet --depth 1 --branch "${bundle_ref}" \
-                "https://github.com/${bundle_repo}" > /dev/null
+    do_install() {
+        local repo_url="https://github.com/${bundle_repo}"
+
+        if [ -n "${bundle_ref}" ]; then
+            git -C "${PLUGIN_ROOT}" clone --quiet --depth 1 \
+                --branch "${bundle_ref}" \
+                "${repo_url}" >/dev/null
+        else
+            git -C "${PLUGIN_ROOT}" clone --quiet --depth 1 \
+                "${repo_url}" >/dev/null
+        fi
+    }
+
+    reinstall() {
+        rm -rf "${bundle_root}" && do_install
+    }
+
+    if [ -f "${bundle_root}/.noupdate" ]; then
+      echo "*** found .noupdate file! ignoring $bundle_spec"
+      return 0
+    fi
+
+    if [ ! -d "${bundle_root}" ]; then
+        echo "*** installing ${bundle_spec}"
+        do_install || return 1
+    elif ! is_git_dir "${bundle_root}"; then
+        echo "*** re-installing ${bundle_spec} as not a git repo"
+        reinstall || return 1
+    elif ! is_same_repo "${bundle_root}" "${bundle_repo}" "${bundle_ref}"; then
+        echo "*** re-installing ${bundle_spec} due to repo/branch mismatch"
+        reinstall || return 1
     else
-        git_pull "${bundle_root}" || \
-            {
-                echo "*** installing ${git_repo}"
-                rm -rf "${bundle_root}" && \
-                    git -C "${PLUGIN_ROOT}" clone --quiet --depth 1 \
-                        "https://github.com/${bundle_repo}" > /dev/null
-            }
+        git_pull "${bundle_root}"
+        rc=$?
+        case $rc in
+            0) ;;
+            1)
+                echo "    re-installing ${bundle_spec}"
+                reinstall
+                ;;
+            2) ;;
+        esac
     fi
 
     if [[ "${bundle_repo}" == *SjvaAgent.bundle ]]; then
         # install and update dummy agents
         for BUN in "${bundle_root}"/*/*.bundle; do
-            [ -d "${PLUGIN_ROOT}/$(basename "$BUN")" ] && rm -rf "${PLUGIN_ROOT:?}/$(basename "$BUN")"
+            [ -d "${BUN}" ] || continue
+            rm -rf "${PLUGIN_ROOT:?}/$(basename "$BUN")"
             mv "$BUN" "${PLUGIN_ROOT}"
         done
 
         # install and update scanners
         for SCN in "${bundle_root}"/Scanners/*; do
-          if [ -d "$SCN" ]; then
+            [ -d "$SCN" ] || continue
             mvto="${SCANNER_ROOT}/$(basename "$SCN")"
-            [ ! -d "${mvto}" ] && mkdir -p "$mvto"
+            mkdir -p "$mvto"
             mv "$SCN"/* "${mvto}/"
-          fi
         done
     fi
 }
