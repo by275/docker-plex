@@ -51,7 +51,7 @@ jobs:
       - 
         name: Initial Buildx
         if: env.X_SKIP == 'false'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: Dockerfile
@@ -84,7 +84,7 @@ jobs:
       - 
         name: Buildx and Push
         if: env.X_SKIP == 'false'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: Dockerfile
