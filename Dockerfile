@@ -7,6 +7,7 @@ FROM ghcr.io/by275/base:ubuntu AS prebuilt
 # BUILD
 # 
 FROM base AS builder
+ARG TARGETPLATFORM
 
 # add go-cron watcher
 COPY --from=prebuilt /go/bin/ /bar/usr/local/bin/
@@ -27,6 +28,19 @@ RUN \
     mkdir -p /tmp/app/contents.d && \
     for dir in /bar/etc/s6-overlay/s6-rc.d/*; do touch "/tmp/app/contents.d/$(basename "$dir")"; done && \
     mv /tmp/app /bar/etc/s6-overlay/s6-rc.d/user
+
+RUN \
+    echo "*** install yt-dlp/FFmpeg-Builds ***" && \
+    apt-get update && \
+    apt-get install -yq --no-install-recommends \
+        xz-utils \
+    && \
+    export FFMPEG_FILE=$(case "${TARGETPLATFORM}" in \
+    "linux/amd64")   echo "ffmpeg-master-latest-linux64-gpl.tar.xz"    ;; \
+    "linux/arm64")   echo "ffmpeg-master-latest-linuxarm64-gpl.tar.xz" ;; \
+    *)               echo "unsupported TARGETPLATFORM: ${TARGETPLATFORM}" >&2; exit 1 ;; esac) && \
+    curl -fLJ "https://github.com/yt-dlp/FFmpeg-Builds/releases/download/latest/${FFMPEG_FILE}" -o /tmp/ffmpeg.tar.xz && \
+    tar -xf /tmp/ffmpeg.tar.xz --strip-components=2 --no-anchored -C /bar/usr/local/bin/ "ffmpeg" "ffprobe"
 
 # 
 # RELEASE
