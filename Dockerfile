@@ -76,6 +76,14 @@ RUN \
         python3-venv \
         sqlite3 \
         && \
+    echo "**** install Plex cacher ****" && \
+    python3 -m venv /opt/plex-cacher/venv && \
+    /opt/plex-cacher/venv/bin/python -m pip install \
+        --disable-pip-version-check \
+        --no-cache-dir \
+        plexapi \
+        psutil \
+        websocket-client && \
     echo "**** install plex_autoscan ****" && \
     git -C /opt clone --depth 1 -b "$PLEX_AUTOSCAN_VERSION_DOCKER" \
         "$PLEX_AUTOSCAN_GIT" && \

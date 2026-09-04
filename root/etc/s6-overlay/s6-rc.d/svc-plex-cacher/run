@@ -25,4 +25,4 @@ mkdir -p "$data_dir"
 fix_ownership "$data_dir"
 
 exec s6-setuidgid "$PLEX_USER" \
-    python3 /usr/local/bin/plex_cacher.py
+    /opt/plex-cacher/venv/bin/python /usr/local/bin/plex_cacher.py
