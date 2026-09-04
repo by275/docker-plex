@@ -1,0 +1,28 @@
+#!/usr/bin/with-contenv bash
+. /usr/local/bin/variables
+
+if [[ "${PLEX_CACHER_ENABLED:-false}" != "true" ]]; then
+    s6-svc -d .
+    exit 0
+fi
+
+s6-svwait -U /var/run/s6-rc/servicedirs/svc-plex
+
+PLEX_CACHER_PLEX_URL="${PLEX_CACHER_PLEX_URL:-http://127.0.0.1:32400}"
+until curl -fsS "${PLEX_CACHER_PLEX_URL%/}/identity" >/dev/null 2>&1; do
+    sleep 3
+done
+
+if [[ -z "${PLEX_CACHER_PLEX_TOKEN:-}" ]]; then
+    until [[ -r "$PLEX_PREFERENCES" ]] && \
+        grep -Eq 'PlexOnlineToken="[^"]+"' "$PLEX_PREFERENCES"; do
+        sleep 3
+    done
+fi
+
+data_dir="${PLEX_CACHER_DATA_DIR:-/config/plex-cacher}"
+mkdir -p "$data_dir"
+fix_ownership "$data_dir"
+
+exec s6-setuidgid "$PLEX_USER" \
+    python3 /usr/local/bin/plex_cacher.py
