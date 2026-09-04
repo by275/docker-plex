@@ -22,6 +22,9 @@ env:
 jobs:
   build-lsio:
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     permissions:
       packages: write
     steps:
@@ -71,6 +74,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           build-args: |
             BASE_IMAGE=${{ env.LSIO_IMAGE }}:latest
+          cache-from: type=gha,scope=build-lsio
+          cache-to: type=gha,mode=max,scope=build-lsio
           push: true
       -
         name: Verify Image
