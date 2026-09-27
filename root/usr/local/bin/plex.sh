@@ -111,11 +111,15 @@ function stats() {
   echo "${result} metadata_items missing analyzation info"
 
   if [ "$result" -gt 0 ]; then
-    query="SELECT metadata_items.title FROM metadata_items, media_items 
-      WHERE metadata_items.id = media_items.metadata_item_id 
-      AND metadata_items.metadata_type BETWEEN 1 and 4 
-      AND media_items.width is NULL"
-    "$PLEX_SQLITE" -readonly -column "$PLEX_DB_FILE" "$query"| awk '{print "    " $0}'
+    query="SELECT metadata_items.title AS title,
+        GROUP_CONCAT(media_parts.file, ' | ') AS file
+      FROM metadata_items
+      JOIN media_items ON metadata_items.id = media_items.metadata_item_id
+      LEFT JOIN media_parts ON media_parts.media_item_id = media_items.id
+      WHERE metadata_items.metadata_type BETWEEN 1 and 4
+      AND media_items.width is NULL
+      GROUP BY metadata_items.id, media_items.id, metadata_items.title"
+    "$PLEX_SQLITE" -readonly -column "$PLEX_DB_FILE" "$query"
     echo ""
   fi
 
